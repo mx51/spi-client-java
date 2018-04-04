@@ -1,0 +1,80 @@
+apply plugin: 'osgi'
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
+
+jar {
+    manifest {
+        instruction 'Bundle-Vendor', publishVendor
+        instruction 'Bundle-Description', publishName
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar, javadocJar
+}
+
+publish.dependsOn {
+    if (!rootProject.hasProperty('bintray.user') || !rootProject.hasProperty('bintray.key')) {
+        throw new IllegalArgumentException('Properties \'bintray.user\' and \'bintray.key\'' +
+                ' must be defined to access the SPI repository!')
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            groupId project.group
+            artifactId project.archivesBaseName
+            version project.version
+            pom.withXml {
+                def root = asNode()
+                root.appendNode('name', project.publishName)
+                root.appendNode('description', project.publishDescription)
+                root.appendNode('url', project.publishVcs)
+                root.children().last()
+            }
+        }
+    }
+}
+
+if (hasProperty('bintray.user') && hasProperty('bintray.key')) {
+    bintray {
+        user = project['bintray.user']
+        key = project['bintray.key']
+        publications = ['mavenJava']
+
+        dryRun = false
+        publish = true
+
+        pkg {
+            name = project['bintray.package']
+            repo = project['bintray.repo']
+            userOrg = project['bintray.userOrg']
+            desc = project.publishDescription
+            licenses = [project.publishLicense]
+            websiteUrl = project.publishUrl
+            vcsUrl = project.publishVcs
+            version {
+                released = new Date()
+                name = project.version
+                vcsTag = project.version
+                gpg {
+                    sign = true
+                }
+            }
+        }
+    }
+}

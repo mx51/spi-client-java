@@ -1,0 +1,17 @@
+# Java class files
+*.class
+
+# Generated files
+out/
+output.log
+
+# Gradle files
+.gradle/
+build/
+
+# Log Files
+*.log
+
+# IntelliJ
+*.iml
+.idea/

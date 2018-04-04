@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+}
+
+archivesBaseName = 'spi-client-java'
+version = '2.0.0'
+
+sourceCompatibility = JavaVersion.VERSION_1_6
+
+ext {
+    publishVendor = 'Assembly Payments'
+    publishName = 'SPI Client Java'
+    publishDescription = 'Java Client Library for Assembly Payments\' In-Store Integration.'
+    publishLicense = 'Apache-2.0'
+    publishUrl = 'https://github.com/AssemblyPayments/spi-client-java'
+    publishVcs = 'https://github.com/AssemblyPayments/spi-client-java.git'
+}
+
+dependencies {
+    compile 'commons-lang:commons-lang:2.6'
+    compile 'commons-codec:commons-codec:1.11'
+    compile 'com.google.code.gson:gson:2.8.2'
+    compile 'org.glassfish.tyrus.bundles:tyrus-standalone-client:1.13.1'
+    compile 'org.apache.logging.log4j:log4j-api:2.10.0'
+    compile 'org.jetbrains:annotations:16.0.1'
+
+    testCompile 'junit:junit:4.12'
+}
+
+apply from: '../gradle/publish.gradle'
