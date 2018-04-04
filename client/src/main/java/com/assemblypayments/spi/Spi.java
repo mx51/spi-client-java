@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.websocket.DeploymentException;
+import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Timer;
@@ -15,7 +16,7 @@ import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 /**
- * SPI integration class, used to manage connection to the terminal.
+ * SPI integration client, used to manage connection to the terminal.
  */
 public class Spi {
 
@@ -66,11 +67,23 @@ public class Spi {
      * <p>
      * If you provide secrets, it will start in paired connecting status; otherwise it will start in unpaired status.
      *
-     * @param posId         Uppercase alphanumeric string that identifies your POS instance. This value is displayed on the EFTPOS screen.
+     * @param posId         Uppercase alphanumeric string that identifies your POS instance.
+     *                      This value is displayed on the EFTPOS screen.
      * @param eftposAddress The IP address of the target EFTPOS.
      * @param secrets       The pairing secrets, if you know it already, or null otherwise
+     * @throws CompatibilityException Thrown if JDK compatibility check has been failed. Includes cause exception
+     *                                explained in document for {@link Crypto#checkCompatibility()}.
      */
-    public Spi(@NotNull String posId, @NotNull String eftposAddress, @Nullable Secrets secrets) {
+    public Spi(@NotNull String posId, @NotNull String eftposAddress, @Nullable Secrets secrets)
+            throws CompatibilityException {
+
+        try {
+            Crypto.checkCompatibility();
+            LOG.info("Compatibility check passed");
+        } catch (GeneralSecurityException e) {
+            throw new CompatibilityException("JDK configuration incompatible with SPI", e);
+        }
+
         this.posId = posId;
         this.eftposAddress = "ws://" + eftposAddress;
         this.secrets = secrets;
@@ -1210,6 +1223,22 @@ public class Spi {
      */
     public interface EventHandler<T> {
         void onEvent(T value);
+    }
+
+    /**
+     * Compatibility problem detected by the client.
+     */
+    public static class CompatibilityException extends Exception {
+
+        public CompatibilityException(@NotNull String message, @NotNull GeneralSecurityException cause) {
+            super(message, cause);
+        }
+
+        @Override
+        public synchronized GeneralSecurityException getCause() {
+            return (GeneralSecurityException) super.getCause();
+        }
+
     }
 
 }

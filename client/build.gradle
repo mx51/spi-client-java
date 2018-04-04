@@ -1,9 +1,10 @@
 plugins {
     id 'java'
+    id 'java-library-distribution'
 }
 
 archivesBaseName = 'spi-client-java'
-version = '2.0.0'
+version = '2.0.1'
 
 sourceCompatibility = JavaVersion.VERSION_1_6
 
@@ -26,5 +27,7 @@ dependencies {
 
     testCompile 'junit:junit:4.12'
 }
+
+distributions.main.baseName = archivesBaseName
 
 apply from: '../gradle/publish.gradle'

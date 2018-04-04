@@ -92,14 +92,14 @@ public class DiffieHellmanTest {
     public void private_key_randomly_generated() {
         BigInteger primeP = BigInteger.valueOf(7919);
         int count = 100;
-        List<BigInteger> privateKeys = new ArrayList<>();
+        List<BigInteger> privateKeys = new ArrayList<BigInteger>();
         for (int i = 0; i < count; i++) {
             privateKeys.add(i, DiffieHellman.randomPrivateKey(primeP));
         }
 
         // be a little lenient because out of 100, we are bound to get duplicates when range is just 7919
         int leniency = 5;
-        assertTrue(count - new HashSet<>(privateKeys).size() < leniency);
+        assertTrue(count - new HashSet<BigInteger>(privateKeys).size() < leniency);
     }
 
     @Test

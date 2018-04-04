@@ -20,7 +20,13 @@ public class Pos {
     }
 
     private void start() {
-        spi = new Spi(posId, eftposAddress, spiSecrets);
+        try {
+            spi = new Spi(posId, eftposAddress, spiSecrets);
+        } catch (Spi.CompatibilityException e) {
+            System.out.println("# JDK compatibility check failed: " + e.getCause().getMessage());
+            return;
+        }
+
         spi.setStatusChangedHandler(new Spi.EventHandler<SpiStatus>() {
             @Override
             public void onEvent(SpiStatus value) {

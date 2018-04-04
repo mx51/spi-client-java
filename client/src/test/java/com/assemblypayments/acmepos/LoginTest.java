@@ -21,7 +21,7 @@ public class LoginTest {
     public void testExpiringSoon() throws ParseException {
         String expiresAt = new SimpleDateFormat(Message.DATE_TIME_FORMAT)
                 .format(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(9)));
-        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> data = new HashMap<String, Object>();
         data.put("expires_datetime", expiresAt);
         data.put("success", true);
         LoginResponse loginResp = new LoginResponse(
@@ -34,7 +34,7 @@ public class LoginTest {
     public void testExpiringSoonNot() throws ParseException {
         String expiresAt = new SimpleDateFormat(Message.DATE_TIME_FORMAT)
                 .format(new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(15)));
-        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> data = new HashMap<String, Object>();
         data.put("expires_datetime", expiresAt);
         data.put("success", true);
         LoginResponse loginResp = new LoginResponse(

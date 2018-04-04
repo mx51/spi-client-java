@@ -1,9 +1,9 @@
 package com.assemblypayments.acmepos;
 
-import com.assemblypayments.spi.util.Events;
 import com.assemblypayments.spi.model.Message;
 import com.assemblypayments.spi.model.MessageStamp;
 import com.assemblypayments.spi.model.Secrets;
+import com.assemblypayments.spi.util.Events;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -29,7 +29,7 @@ public class MessagesTest {
     }
 
     @Test
-    public void testIncomingMessageEncrypted() throws Exception {
+    public void testIncomingMessageEncrypted() {
         // Here's an incoming encrypted msg
         String msgJsonStr = "{\"enc\": \"819A6FF34A7656DBE5274AC44A28A48DD6D723FCEF12570E4488410B83A1504084D79BA9DF05C3CE58B330C6626EA5E9EB6BAAB3BFE95345A8E9834F183A1AB2F6158E8CDC217B4970E6331B4BE0FCAA\",\"hmac\": \"21FB2315E2FB5A22857F21E48D3EEC0969AD24C0E8A99C56A37B66B9E503E1EF\"}";
 
@@ -46,7 +46,7 @@ public class MessagesTest {
     }
 
     @Test
-    public void testIncomingMessageEncrypted_badSig() throws Exception {
+    public void testIncomingMessageEncrypted_badSig() {
         // Here's an incoming encrypted msg
         String msgJsonStr = "{\"enc\": \"819A6FF34A7656DBE5274AC44A28A48DD6D723FCEF12570E4488410B83A1504084D79BA9DF05C3CE58B330C6626EA5E9EB6BAAB3BFE95345A8E9834F183A1AB2F6158E8CDC217B4970E6331B4BE0FCAA\",\"hmac\": \"21FB2315E2FB5A22857F21E48D3EEC0969AD24C0E8A99C56A37B66B9E503E1EA\"}";
 
@@ -62,7 +62,7 @@ public class MessagesTest {
     @Test
     public void testOutgoingMessageUnencrypted() {
         // Create a message
-        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> data = new HashMap<String, Object>();
         data.put("param1", "value1");
         Message m = new Message("77", "event_y", data, false);
 
@@ -77,9 +77,9 @@ public class MessagesTest {
     }
 
     @Test
-    public void testOutgoingMessageEncrypted() throws Exception {
+    public void testOutgoingMessageEncrypted() {
         // Create a message
-        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> data = new HashMap<String, Object>();
         data.put("param1", "value1");
         Message m = new Message("2", "ping", data, true);
 

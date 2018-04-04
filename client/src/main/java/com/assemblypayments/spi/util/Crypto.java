@@ -4,11 +4,13 @@ import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.digest.HmacAlgorithms;
 import org.apache.commons.codec.digest.HmacUtils;
 
-import javax.crypto.Cipher;
-import javax.crypto.Mac;
+import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 public final class Crypto {
 
@@ -19,15 +21,34 @@ public final class Crypto {
 
     /**
      * Decrypt a block using a cipher mode of CBC and a padding mode of PKCS7.
+     * <p>
+     * Note: To catch all exception types, use {@link GeneralSecurityException}.
      *
      * @param key        The key value
      * @param encMessage the message to decrypt
      * @return Returns the resulting plaintext data.
+     * @throws NoSuchPaddingException             Padding scheme 'PKCS5PADDING' not available.
+     * @throws NoSuchAlgorithmException           Algorithm 'AES/CBC' not implemented.
+     * @throws InvalidAlgorithmParameterException The given algorithm 16-byte initialization vector is inappropriate
+     *                                            for this cipher, or it implies a cryptographic strength that would
+     *                                            exceed the legal limits (as determined from the configured
+     *                                            jurisdiction policy files).
+     * @throws InvalidKeyException                The given key is inappropriate for initializing this cipher, or
+     *                                            its key size exceeds the maximum allowable key size (as determined
+     *                                            from the configured jurisdiction policy files).
+     * @throws BadPaddingException                This cipher is in decryption mode, and (un)padding has been
+     *                                            requested, but the decrypted data is not bounded by the appropriate
+     *                                            padding bytes.
+     * @throws IllegalBlockSizeException          This cipher is a block cipher, no padding has been requested (only
+     *                                            in encryption mode), and the total input length of the data
+     *                                            processed by this cipher is not a multiple of block size; or if this
+     *                                            encryption algorithm is unable to process the input data provided.
      */
-    public static String aesDecrypt(byte[] key, String encMessage) throws GeneralSecurityException {
-        if (key == null) {
-            throw new IllegalArgumentException("Key must not be null");
-        }
+    public static String aesDecrypt(byte[] key, String encMessage) throws NoSuchPaddingException,
+            NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException,
+            BadPaddingException, IllegalBlockSizeException {
+
+        if (key == null) throw new IllegalArgumentException("Key must not be null");
 
         final byte[] inputBuffer = hexStringToByteArray(encMessage);
 
@@ -44,15 +65,34 @@ public final class Crypto {
 
     /**
      * Encrypt a block using a cipher mode of CBC and a padding mode of PKCS7.
+     * <p>
+     * Note: To catch all exception types, use {@link GeneralSecurityException}.
      *
      * @param key     The key value
      * @param message The message to encrypt
      * @return Returns the resulting ciphertext data.
+     * @throws NoSuchPaddingException             Padding scheme 'PKCS5PADDING' not available.
+     * @throws NoSuchAlgorithmException           Algorithm 'AES/CBC' not implemented.
+     * @throws InvalidAlgorithmParameterException The given algorithm 16-byte initialization vector is inappropriate
+     *                                            for this cipher, or it implies a cryptographic strength that would
+     *                                            exceed the legal limits (as determined from the configured
+     *                                            jurisdiction policy files).
+     * @throws InvalidKeyException                The given key is inappropriate for initializing this cipher, or
+     *                                            its key size exceeds the maximum allowable key size (as determined
+     *                                            from the configured jurisdiction policy files).
+     * @throws BadPaddingException                This cipher is in decryption mode, and (un)padding has been
+     *                                            requested, but the decrypted data is not bounded by the appropriate
+     *                                            padding bytes.
+     * @throws IllegalBlockSizeException          This cipher is a block cipher, no padding has been requested (only
+     *                                            in encryption mode), and the total input length of the data
+     *                                            processed by this cipher is not a multiple of block size; or if this
+     *                                            encryption algorithm is unable to process the input data provided.
      */
-    public static String aesEncrypt(byte[] key, String message) throws GeneralSecurityException {
-        if (key == null) {
-            throw new IllegalArgumentException("Key cannot be null");
-        }
+    public static String aesEncrypt(byte[] key, String message) throws NoSuchPaddingException,
+            NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException,
+            BadPaddingException, IllegalBlockSizeException {
+
+        if (key == null) throw new IllegalArgumentException("Key cannot be null");
 
         final byte[] inputBuffer = message.getBytes(Charsets.UTF_8);
 
@@ -98,6 +138,57 @@ public final class Crypto {
                     + Character.digit(hex.charAt(i + 1), 16));
         }
         return data;
+    }
+
+    /**
+     * Proactively checks for any known JDK compatibility issues throws them. Should be
+     * used while instantiating to prevent more issues arising during execution.
+     * <p>
+     * Note: To catch all exception types, use {@link GeneralSecurityException}.
+     *
+     * @throws NoSuchPaddingException             Padding scheme 'PKCS5PADDING' not available.
+     * @throws NoSuchAlgorithmException           Algorithm 'AES/CBC' not implemented.
+     * @throws InvalidAlgorithmParameterException The given algorithm 16-byte initialization vector is inappropriate
+     *                                            for this cipher, or it implies a cryptographic strength that would
+     *                                            exceed the legal limits (as determined from the configured
+     *                                            jurisdiction policy files).
+     * @throws InvalidKeyException                The given key is inappropriate for initializing this cipher, or
+     *                                            its key size exceeds the maximum allowable key size (as determined
+     *                                            from the configured jurisdiction policy files).
+     * @throws BadPaddingException                This cipher is in decryption mode, and (un)padding has been
+     *                                            requested, but the decrypted data is not bounded by the appropriate
+     *                                            padding bytes.
+     * @throws IllegalBlockSizeException          This cipher is a block cipher, no padding has been requested (only
+     *                                            in encryption mode), and the total input length of the data
+     *                                            processed by this cipher is not a multiple of block size; or if this
+     *                                            encryption algorithm is unable to process the input data provided.
+     * @throws CompatibilityValidationException   Input and output of the encryption are mismatched and no other types
+     *                                            of exception have been fired.
+     */
+    public static void checkCompatibility() throws NoSuchPaddingException, NoSuchAlgorithmException,
+            InvalidAlgorithmParameterException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException,
+            CompatibilityValidationException {
+
+        final byte[] key = new byte[32];
+        final String message = "MESSAGE";
+
+        final String cipherText = aesEncrypt(key, message);
+        final String plainText = aesDecrypt(key, cipherText);
+
+        if (!message.equals(plainText)) {
+            throw new CompatibilityValidationException("Decrypted text mismatch");
+        }
+    }
+
+    /**
+     * Compatibility check failure in a way not already covered by other {@link GeneralSecurityException} types.
+     */
+    public static class CompatibilityValidationException extends GeneralSecurityException {
+
+        public CompatibilityValidationException(String message) {
+            super(message);
+        }
+
     }
 
 }

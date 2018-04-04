@@ -1,7 +1,7 @@
 package com.assemblypayments.acmepos;
 
-import com.assemblypayments.spi.util.PairingHelper;
 import com.assemblypayments.spi.model.*;
+import com.assemblypayments.spi.util.PairingHelper;
 import org.junit.Test;
 
 import java.math.BigInteger;
@@ -12,7 +12,7 @@ import static org.junit.Assert.assertTrue;
 
 public class PairingTest {
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "ConstantConditions", "UnusedAssignment"})
     @Test
     public void testPairingKeyResponse() {
         // We don't have secrets to start with.
