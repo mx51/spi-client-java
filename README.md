@@ -12,8 +12,8 @@ Library version is henceforth referred to as 'X.Y.Z', to find out what release v
 
 Easiest way to import the library into your project is using the Maven repository:
 
-1. Add Maven repository 
-    - URL: https://dl.bintray.com/assemblypayments/spi
+1. Add JCenter repository 
+    - URL: https://jcenter.bintray.com/
 2. Import dependency into your project: 
     - GroupId: `com.assemblypayments`
     - ArtifactId: `spi-client-java`
@@ -27,9 +27,7 @@ Declare the repository:
 
 ```
 repositories {
-    maven {
-        url 'https://dl.bintray.com/assemblypayments/spi'
-    }
+    jcenter()
 }
 ```
 
@@ -47,10 +45,10 @@ Configure the repository to be used for dependency resolution:
 
 ```
 <repositories>
-  <repository>
-    <id>spi</id>
-    <url>https://dl.bintray.com/assemblypayments/spi</url>
-  </repository>
+    <repository>
+        <id>jcenter</id>
+        <url>https://jcenter.bintray.com/</url>
+    </repository>
 </repositories>
 ```
 
@@ -59,9 +57,9 @@ And use the library as a dependency:
 ```
 <dependencies>
     <dependency>
-      <groupId>com.assemblypayments</groupId>
-      <artifactId>spi-client-java</artifactId>
-      <version>X.Y.Z</version>
+        <groupId>com.assemblypayments</groupId>
+        <artifactId>spi-client-java</artifactId>
+        <version>X.Y.Z</version>
     </dependency>
 </dependencies>
 ```
