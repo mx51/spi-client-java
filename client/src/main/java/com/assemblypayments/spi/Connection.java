@@ -1,8 +1,13 @@
 package com.assemblypayments.spi;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.glassfish.tyrus.client.ClientManager;
+import org.jetbrains.annotations.NotNull;
 
 import javax.websocket.*;
+import javax.websocket.CloseReason.CloseCodes;
+import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Timer;
@@ -11,6 +16,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 class Connection {
+
+    private static final Logger LOG = LogManager.getLogger("spi");
 
     private static final long CONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(8);
     private EventHandler eventHandler;
@@ -109,6 +116,7 @@ class Connection {
     public void disconnect() {
         if (this.state == State.DISCONNECTED) return;
         cancelConnectionTimer();
+        closeSession(CloseCodes.GOING_AWAY);
         onClose();
     }
 
@@ -117,7 +125,7 @@ class Connection {
     }
 
     public void dispose() {
-        cancelConnectionTimer();
+        disconnect();
     }
 
     private void onOpen(Session session) {
@@ -151,6 +159,16 @@ class Connection {
         if (connectionTimer != null) {
             connectionTimer.cancel();
             connectionTimer = null;
+        }
+    }
+
+    private void closeSession(@NotNull CloseReason.CloseCode code) {
+        if (wsSession != null) {
+            try {
+                wsSession.close(new CloseReason(code, null));
+            } catch (IOException e) {
+                LOG.warn("Error closing session", e);
+            }
         }
     }
 

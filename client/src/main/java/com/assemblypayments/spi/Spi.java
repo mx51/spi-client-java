@@ -398,6 +398,8 @@ public class Spi {
         spiMessageStamp.setSecrets(null);
         secretsChanged(secrets);
 
+        LOG.info("Unpairing complete.");
+
         return true;
     }
 
@@ -975,7 +977,7 @@ public class Spi {
                         }
                     }, TimeUnit.SECONDS.toMillis(5));
                 } else if (getCurrentFlow() == SpiFlow.PAIRING) {
-                    LOG.warn("Lost Connection during pairing.");
+                    LOG.warn("Lost connection during pairing.");
                     getCurrentPairingFlowState().setMessage("Could not Connect to Pair. Check Network and Try Again...");
                     onPairingFailed();
                     pairingFlowStateChanged();
