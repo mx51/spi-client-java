@@ -8,14 +8,20 @@ import java.util.Locale;
 public abstract class AbstractChargeResponse extends AbstractTransactionResponse {
 
     private final String schemeName;
+    private final String posRefId;
 
     protected AbstractChargeResponse(Message m) {
         super(m);
         this.schemeName = m.getDataStringValue("scheme_name");
+        this.posRefId = m.getDataStringValue("pos_ref_id");
     }
 
     public String getSchemeName() {
         return schemeName;
+    }
+
+    public String getPosRefId() {
+        return posRefId;
     }
 
     public String getCustomerReceipt() {

@@ -5,7 +5,7 @@ package com.assemblypayments.spi.model;
  */
 public class TransactionFlowState {
 
-    private String id;
+    private String posRefId;
     private TransactionType type;
     private String displayMessage;
     private int amountCents;
@@ -22,8 +22,8 @@ public class TransactionFlowState {
     private Message request;
     private boolean awaitingGltResponse;
 
-    public TransactionFlowState(String id, TransactionType type, int amountCents, Message message, String msg) {
-        this.id = id;
+    public TransactionFlowState(String posRefId, TransactionType type, int amountCents, Message message, String msg) {
+        this.posRefId = posRefId;
         this.type = type;
         this.amountCents = amountCents;
         this.requestSent = false;
@@ -95,63 +95,81 @@ public class TransactionFlowState {
     }
 
     /**
-     * The id given to this transaction
+     * @return The id given to this transaction.
      */
+    public String getPosRefId() {
+        return posRefId;
+    }
+
+    /**
+     * @param posRefId The id given to this transaction.
+     */
+    public void setPosRefId(String posRefId) {
+        this.posRefId = posRefId;
+    }
+
+    /**
+     * @return The id given to this transaction.
+     * @deprecated Use {@link #getPosRefId()} instead.
+     */
+    @Deprecated
     public String getId() {
-        return id;
+        return getPosRefId();
     }
 
     /**
-     * The id given to this transaction
+     * @param id The id given to this transaction.
+     * @deprecated Use {@link #getPosRefId()} instead.
      */
+    @Deprecated
     public void setId(String id) {
-        this.id = id;
+        setPosRefId(id);
     }
 
     /**
-     * Purchase/Refund/Settle/...
+     * @return Purchase/Refund/Settle/...
      */
     public TransactionType getType() {
         return type;
     }
 
     /**
-     * Purchase/Refund/Settle/...
+     * @param type Purchase/Refund/Settle/...
      */
     public void setType(TransactionType type) {
         this.type = type;
     }
 
     /**
-     * A text message to display on your Transaction Flow Screen
+     * @return A text message to display on your Transaction Flow Screen.
      */
     public String getDisplayMessage() {
         return displayMessage;
     }
 
     /**
-     * A text message to display on your Transaction Flow Screen
+     * @param displayMessage A text message to display on your Transaction Flow Screen.
      */
     public void setDisplayMessage(String displayMessage) {
         this.displayMessage = displayMessage;
     }
 
     /**
-     * Amount in cents for this transaction
+     * @return Amount in cents for this transaction.
      */
     public int getAmountCents() {
         return amountCents;
     }
 
     /**
-     * Amount in cents for this transaction
+     * @param amountCents Amount in cents for this transaction.
      */
     public void setAmountCents(int amountCents) {
         this.amountCents = amountCents;
     }
 
     /**
-     * Whether the request has been sent to the EFTPOS yet or not.
+     * @return Whether the request has been sent to the EFTPOS yet or not.
      * In the PairedConnecting state, the transaction is initiated
      * but the request is only sent once the connection is recovered.
      */
@@ -160,58 +178,58 @@ public class TransactionFlowState {
     }
 
     /**
-     * Whether the request has been sent to the EFTPOS yet or not.
-     * In the PairedConnecting state, the transaction is initiated
-     * but the request is only sent once the connection is recovered.
+     * @param requestSent Whether the request has been sent to the EFTPOS yet or not.
+     *                    In the PairedConnecting state, the transaction is initiated
+     *                    but the request is only sent once the connection is recovered.
      */
     public void setRequestSent(boolean requestSent) {
         this.requestSent = requestSent;
     }
 
     /**
-     * The time when the request was sent to the EFTPOS.
+     * @return The time when the request was sent to the EFTPOS.
      */
     public long getRequestTime() {
         return requestTime;
     }
 
     /**
-     * The time when the request was sent to the EFTPOS.
+     * @param requestTime requestTime The time when the request was sent to the EFTPOS.
      */
     public void setRequestTime(long requestTime) {
         this.requestTime = requestTime;
     }
 
     /**
-     * The time when we last asked for an update, including the original request at first
+     * @return The time when we last asked for an update, including the original request at first.
      */
     public long getLastStateRequestTime() {
         return lastStateRequestTime;
     }
 
     /**
-     * The time when we last asked for an update, including the original request at first
+     * @param lastStateRequestTime The time when we last asked for an update, including the original request at first.
      */
     public void setLastStateRequestTime(long lastStateRequestTime) {
         this.lastStateRequestTime = lastStateRequestTime;
     }
 
     /**
-     * Whether we're currently attempting to Cancel the transaction.
+     * @return Whether we're currently attempting to Cancel the transaction.
      */
     public boolean isAttemptingToCancel() {
         return attemptingToCancel;
     }
 
     /**
-     * Whether we're currently attempting to Cancel the transaction.
+     * @param attemptingToCancel Whether we're currently attempting to Cancel the transaction.
      */
     public void setAttemptingToCancel(boolean attemptingToCancel) {
         this.attemptingToCancel = attemptingToCancel;
     }
 
     /**
-     * When this flag is on, you need to display the signature accept/decline buttons in your
+     * @return When this flag is on, you need to display the signature accept/decline buttons in your
      * transaction flow screen.
      */
     public boolean isAwaitingSignatureCheck() {
@@ -219,29 +237,29 @@ public class TransactionFlowState {
     }
 
     /**
-     * When this flag is on, you need to display the signature accept/decline buttons in your
-     * transaction flow screen.
+     * @param awaitingSignatureCheck When this flag is on, you need to display the signature accept/decline buttons in your
+     *                               transaction flow screen.
      */
     public void setAwaitingSignatureCheck(boolean awaitingSignatureCheck) {
         this.awaitingSignatureCheck = awaitingSignatureCheck;
     }
 
     /**
-     * Whether this transaction flow is over or not.
+     * @return Whether this transaction flow is over or not.
      */
     public boolean isFinished() {
         return finished;
     }
 
     /**
-     * Whether this transaction flow is over or not.
+     * @param finished Whether this transaction flow is over or not.
      */
     public void setFinished(boolean finished) {
         this.finished = finished;
     }
 
     /**
-     * The success state of this transaction. Starts off as Unknown.
+     * @return The success state of this transaction. Starts off as Unknown.
      * When finished, can be Success, Failed OR Unknown.
      */
     public Message.SuccessState getSuccess() {
@@ -249,84 +267,84 @@ public class TransactionFlowState {
     }
 
     /**
-     * The success state of this transaction. Starts off as Unknown.
-     * When finished, can be Success, Failed OR Unknown.
+     * @param success The success state of this transaction. Starts off as Unknown.
+     *                When finished, can be Success, Failed OR Unknown.
      */
     public void setSuccess(Message.SuccessState success) {
         this.success = success;
     }
 
     /**
-     * The response at the end of the transaction.
+     * @return The response at the end of the transaction.
      * Might not be present in all edge cases.
      * You can then turn this Message into the appropriate structure,
-     * such as PurchaseResponse, RefundResponse, etc
+     * such as PurchaseResponse, RefundResponse, etc.
      */
     public Message getResponse() {
         return response;
     }
 
     /**
-     * The response at the end of the transaction.
-     * Might not be present in all edge cases.
-     * You can then turn this Message into the appropriate structure,
-     * such as PurchaseResponse, RefundResponse, etc
+     * @param response The response at the end of the transaction.
+     *                 Might not be present in all edge cases.
+     *                 You can then turn this Message into the appropriate structure,
+     *                 such as PurchaseResponse, RefundResponse, etc.
      */
     public void setResponse(Message response) {
         this.response = response;
     }
 
     /**
-     * The message the we received from EFTPOS that told us that signature is required.
+     * @return The message the we received from EFTPOS that told us that signature is required.
      */
     public SignatureRequired getSignatureRequiredMessage() {
         return signatureRequiredMessage;
     }
 
     /**
-     * The message the we received from EFTPOS that told us that signature is required.
+     * @param signatureRequiredMessage The message the we received from EFTPOS that told us that signature is required.
      */
     public void setSignatureRequiredMessage(SignatureRequired signatureRequiredMessage) {
         this.signatureRequiredMessage = signatureRequiredMessage;
     }
 
     /**
-     * The time when the cancel attempt was made.
+     * @return The time when the cancel attempt was made.
      */
     public long getCancelAttemptTime() {
         return cancelAttemptTime;
     }
 
     /**
-     * The time when the cancel attempt was made.
+     * @param cancelAttemptTime The time when the cancel attempt was made.
      */
     public void setCancelAttemptTime(long cancelAttemptTime) {
         this.cancelAttemptTime = cancelAttemptTime;
     }
 
     /**
-     * The request message that we are sending/sent to the server.
+     * @return The request message that we are sending/sent to the server.
      */
     public Message getRequest() {
         return request;
     }
 
     /**
-     * The request message that we are sending/sent to the server.
+     * @param request The request message that we are sending/sent to the server.
      */
     public void setRequest(Message request) {
         this.request = request;
     }
 
     /**
-     * Whether we're currently waiting for a Get Last Transaction Response to get an update.
+     * @return Whether we're currently waiting for a Get Last Transaction Response to get an update.
      */
     public boolean isAwaitingGltResponse() {
         return awaitingGltResponse;
     }
 
     /**
-     * Whether we're currently waiting for a Get Last Transaction Response to get an update.
+     * @param awaitingGltResponse Whether we're currently waiting for a Get Last Transaction Response to get an update.
      */
     public void setAwaitingGltResponse(boolean awaitingGltResponse) {
         this.awaitingGltResponse = awaitingGltResponse;

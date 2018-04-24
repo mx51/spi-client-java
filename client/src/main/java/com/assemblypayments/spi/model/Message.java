@@ -10,9 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Message represents the contents of a message.
@@ -163,6 +161,26 @@ public class Message {
         if (v instanceof Boolean) return ((Boolean) v);
         if (v instanceof String) return Boolean.parseBoolean((String) v);
         return defaultIfNotFound;
+    }
+
+    @NotNull
+    public Map<String, Object> getDataMapValue(String attribute) {
+        final Object v = data.get(attribute);
+        if (v instanceof Map) {
+            //noinspection unchecked
+            return (Map<String, Object>) v;
+        }
+        return Collections.emptyMap();
+    }
+
+    @NotNull
+    public List<Object> getDataListValue(String attribute) {
+        final Object v = data.get(attribute);
+        if (v instanceof List) {
+            //noinspection unchecked
+            return (List<Object>) v;
+        }
+        return Collections.emptyList();
     }
 
     public long getServerTimeDelta() {
