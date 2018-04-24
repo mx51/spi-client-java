@@ -152,7 +152,7 @@ public class Pos {
                             System.out.println("# Response: " + settleResponse.getResponseText());
                             System.out.println("# Error: " + txFlowState.getResponse().getError());
                             System.out.println("# Merchant Receipt:");
-                            System.out.println(settleResponse.getReceipt().trim());
+                            System.out.println(settleResponse.getMerchantReceipt().trim());
                             //} else {
                             // We did not even get a response, like in the case of a time-out.
                         }

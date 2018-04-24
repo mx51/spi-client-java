@@ -5,6 +5,7 @@ import com.assemblypayments.spi.util.Events;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
+import org.jetbrains.annotations.NotNull;
 
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
@@ -128,6 +129,7 @@ public class Message {
         this.decryptedJson = decryptedJson;
     }
 
+    @NotNull
     public SuccessState getSuccessState() {
         if (data == null) return SuccessState.UNKNOWN;
         final Object success = data.get("success");
@@ -141,18 +143,26 @@ public class Message {
         return null;
     }
 
+    @NotNull
     public String getDataStringValue(String attribute) {
         final Object v = data.get(attribute);
         if (v instanceof String) return (String) v;
         return "";
     }
 
-    public Integer getDataIntValue(String attribute) {
+    public int getDataIntValue(String attribute) {
         final Object v = data.get(attribute);
         if (v instanceof Integer) return (Integer) v;
         if (v instanceof Double) return ((Double) v).intValue();
-        if (v instanceof String) return new Integer((String) v);
+        if (v instanceof String) return Integer.parseInt((String) v);
         return 0;
+    }
+
+    public boolean getDataBooleanValue(String attribute, boolean defaultIfNotFound) {
+        final Object v = data.get(attribute);
+        if (v instanceof Boolean) return ((Boolean) v);
+        if (v instanceof String) return Boolean.parseBoolean((String) v);
+        return defaultIfNotFound;
     }
 
     public long getServerTimeDelta() {

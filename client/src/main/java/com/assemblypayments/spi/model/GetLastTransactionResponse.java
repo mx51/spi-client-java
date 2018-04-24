@@ -1,7 +1,5 @@
 package com.assemblypayments.spi.model;
 
-import java.util.Objects;
-
 public class GetLastTransactionResponse {
 
     private final Message m;
@@ -19,11 +17,11 @@ public class GetLastTransactionResponse {
     }
 
     public boolean wasOperationInProgressError() {
-        return Objects.equals(m.getError(), "OPERATION_IN_PROGRESS");
+        return "OPERATION_IN_PROGRESS".equals(m.getError());
     }
 
     public Message.SuccessState getSuccessState() {
-        return this.m.getSuccessState();
+        return m.getSuccessState();
     }
 
     public String getTxType() {
@@ -56,7 +54,7 @@ public class GetLastTransactionResponse {
     public void copyMerchantReceiptToCustomerReceipt() {
         final String cr = m.getDataStringValue("customer_receipt");
         final String mr = m.getDataStringValue("merchant_receipt");
-        if (!Objects.equals(mr, "") && Objects.equals(cr, "")) {
+        if (mr.length() > 0 && cr.length() == 0) {
             m.getData().put("customer_receipt", mr);
         }
     }

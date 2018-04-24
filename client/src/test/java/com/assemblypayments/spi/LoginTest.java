@@ -1,4 +1,4 @@
-package com.assemblypayments.acmepos;
+package com.assemblypayments.spi;
 
 import com.assemblypayments.spi.util.Events;
 import com.assemblypayments.spi.model.LoginResponse;

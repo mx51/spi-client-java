@@ -1,50 +1,29 @@
 package com.assemblypayments.spi.model;
 
-public class PurchaseResponse {
-
-    private final boolean success;
-    private final String requestId;
-    private final String schemeName;
-
-    private final Message m;
+public class PurchaseResponse extends AbstractChargeResponse {
 
     public PurchaseResponse(Message m) {
-        this.requestId = m.getId();
-        this.m = m;
-        this.schemeName = m.getDataStringValue("scheme_name");
-        this.success = m.getSuccessState() == Message.SuccessState.SUCCESS;
+        super(m);
     }
 
-    public boolean getSuccess() {
-        return success;
+    public int getPurchaseAmount() {
+        return m.getDataIntValue("purchase_amount");
     }
 
-    public String getRequestId() {
-        return requestId;
+    public int getTipAmount() {
+        return m.getDataIntValue("tip_amount");
     }
 
-    public String getSchemeName() {
-        return schemeName;
+    public int getCashoutAmount() {
+        return m.getDataIntValue("cash_amount");
     }
 
-    public String getRRN() {
-        return m.getDataStringValue("rrn");
+    public int getBankNonCashAmount() {
+        return m.getDataIntValue("bank_noncash_amount");
     }
 
-    public String getCustomerReceipt() {
-        return m.getDataStringValue("customer_receipt");
-    }
-
-    public String getMerchantReceipt() {
-        return m.getDataStringValue("merchant_receipt");
-    }
-
-    public String getResponseText() {
-        return m.getDataStringValue("host_response_text");
-    }
-
-    public String getResponseValue(String attribute) {
-        return m.getDataStringValue(attribute);
+    public int getBankCashAmount() {
+        return m.getDataIntValue("bank_cash_amount");
     }
 
 }

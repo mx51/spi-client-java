@@ -11,6 +11,14 @@ public class PairResponse {
         this.success = (Boolean) m.getData().get("success");
     }
 
+    public boolean isSuccess() {
+        return success;
+    }
+
+    /**
+     * @deprecated Use {@link #isSuccess()} instead.
+     */
+    @Deprecated
     public Boolean getSuccess() {
         return success;
     }

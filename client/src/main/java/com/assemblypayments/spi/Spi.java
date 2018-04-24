@@ -88,6 +88,10 @@ public class Spi {
         this.eftposAddress = "ws://" + eftposAddress;
         this.secrets = secrets;
 
+        // Default state
+        currentStatus = SpiStatus.UNPAIRED;
+        currentFlow = SpiFlow.IDLE;
+
         // Our stamp for signing outgoing messages
         spiMessageStamp = new MessageStamp(this.posId, this.secrets, 0);
 
@@ -668,7 +672,7 @@ public class Spi {
 
         final PairingFlowState currentState = getCurrentPairingFlowState();
         currentState.setAwaitingCheckFromEftpos(false);
-        if (pairResp.getSuccess()) {
+        if (pairResp.isSuccess()) {
             if (currentState.isAwaitingCheckFromPos()) {
                 // Still Waiting for User to say yes on POS
                 currentState.setMessage("Confirm that the following Code is what the EFTPOS showed");
@@ -1122,7 +1126,7 @@ public class Spi {
      */
     private void handleLoginResponse(@NotNull Message m) {
         final LoginResponse lr = new LoginResponse(m);
-        if (lr.getSuccess()) {
+        if (lr.isSuccess()) {
             mostRecentLoginResponse = lr;
 
             if (!readyToTransact) {

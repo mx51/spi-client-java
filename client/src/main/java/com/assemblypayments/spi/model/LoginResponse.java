@@ -14,8 +14,16 @@ public class LoginResponse {
         this.expires = (String) m.getData().get("expires_datetime");
     }
 
-    public Boolean getSuccess() {
+    public boolean isSuccess() {
         return success;
+    }
+
+    /**
+     * @deprecated Use {@link #isSuccess()} instead.
+     */
+    @Deprecated
+    public Boolean getSuccess() {
+        return isSuccess();
     }
 
     public String getExpires() {

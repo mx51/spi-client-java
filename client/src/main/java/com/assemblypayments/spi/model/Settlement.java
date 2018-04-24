@@ -1,32 +1,21 @@
 package com.assemblypayments.spi.model;
 
-public class Settlement {
-
-    private final boolean success;
-    private final String requestId;
-
-    private final Message m;
+public class Settlement extends AbstractTransactionResponse {
 
     public Settlement(Message m) {
-        this.requestId = m.getId();
-        this.m = m;
-        this.success = m.getSuccessState() == Message.SuccessState.SUCCESS;
-    }
-
-    public boolean getSuccess() {
-        return success;
-    }
-
-    public String getRequestId() {
-        return requestId;
+        super(m);
     }
 
     public String getResponseText() {
-        return m.getDataStringValue("host_response_text");
+        return super.getResponseText();
     }
 
+    /**
+     * @deprecated Use {@link #getMerchantReceipt()} instead.
+     */
+    @Deprecated
     public String getReceipt() {
-        return m.getDataStringValue("merchant_receipt");
+        return getMerchantReceipt();
     }
 
 }
