@@ -5,12 +5,13 @@ import org.jetbrains.annotations.NotNull;
 public enum TransactionType {
     PURCHASE("Purchase"),
     REFUND("Refund"),
-    CASHOUT_ONLY("CashoutOnly"),
+    CASHOUT_ONLY("Cashout Only"),
     MOTO("MOTO"),
     SETTLE("Settle"),
+    SETTLEMENT_ENQUIRY("Settlement Enquiry"),
     GET_LAST_TRANSACTION("Get Last Transaction"),
     PREAUTH("Preauth"),
-    ACCOUNT_VERIFY("AccountVerify");
+    ACCOUNT_VERIFY("Account Verify");
 
     private final String name;
 
@@ -27,4 +28,5 @@ public enum TransactionType {
     public String toString() {
         return getName();
     }
+
 }

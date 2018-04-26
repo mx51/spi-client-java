@@ -114,7 +114,7 @@ public class PayAtTableConfig {
         return new Message(messageId, Events.PAY_AT_TABLE_GET_TABLE_CONFIG, data, true);
     }
 
-    static Message featureDisableMessage(String messageId) {
+    public static Message featureDisableMessage(String messageId) {
         final Map<String, Object> data = new HashMap<String, Object>();
         data.put("pay_at_table_enabled", false);
 

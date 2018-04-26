@@ -1,5 +1,7 @@
 package com.assemblypayments.spi.model;
 
+import org.apache.commons.lang.StringUtils;
+
 public class GetLastTransactionResponse {
 
     private final Message m;
@@ -12,32 +14,71 @@ public class GetLastTransactionResponse {
         // We can't rely on checking "success" flag here,
         // as retrieval may be successful, but the retrieved transaction was a fail.
         // So we check if we got back an RRN.
-        String rrn = getRRN();
-        return rrn != null && !rrn.isEmpty();
+        return !StringUtils.isEmpty(getResponseCode());
     }
 
     public boolean wasOperationInProgressError() {
         return "OPERATION_IN_PROGRESS".equals(m.getError());
     }
 
+    public boolean isWaitingForSignatureResponse() {
+        return m.getError().startsWith("OPERATION_IN_PROGRESS_AWAITING_SIGNATURE");
+    }
+
+    public boolean isWaitingForAuthCode() {
+        return m.getError().startsWith("OPERATION_IN_PROGRESS_AWAITING_PHONE_AUTH_CODE");
+    }
+
+    public boolean isStillInProgress(String posRefId) {
+        return wasOperationInProgressError() && getPosRefId().equals(posRefId);
+    }
+
     public Message.SuccessState getSuccessState() {
         return m.getSuccessState();
+    }
+
+    public boolean wasSuccessfulTx() {
+        return m.getSuccessState() == Message.SuccessState.SUCCESS;
     }
 
     public String getTxType() {
         return getResponseValue("transaction_type");
     }
 
+    public String getPosRefId() {
+        return m.getDataStringValue("pos_ref_id");
+    }
+
+    /**
+     * @deprecated Should not need to look at this in a GLT Response.
+     */
+    @Deprecated
     public int getTransactionAmount() {
         return m.getDataIntValue("amount_transaction_type");
     }
 
+    /**
+     * @deprecated Should not need to look at this in a GLT Response.
+     */
+    @Deprecated
     public String getBankDateTimeString() {
         return m.getDataStringValue("bank_date") + m.getDataStringValue("bank_time");
     }
 
+    /**
+     * @deprecated Should not need to look at this in a GLT Response.
+     */
+    @Deprecated
     public String getRRN() {
         return m.getDataStringValue("rrn");
+    }
+
+    public String getResponseText() {
+        return m.getDataStringValue("host_response_text");
+    }
+
+    public String getResponseCode() {
+        return m.getDataStringValue("host_response_code");
     }
 
     public String getResponseValue(String attribute) {

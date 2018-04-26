@@ -2,6 +2,7 @@ package com.assemblypayments.spi;
 
 import com.assemblypayments.spi.model.*;
 import com.assemblypayments.spi.util.*;
+import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -9,8 +10,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.websocket.DeploymentException;
 import java.security.GeneralSecurityException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
@@ -44,11 +43,11 @@ public class Spi {
 
     private boolean readyToTransact;
     private Message mostRecentPingSent;
+    private long mostRecentPingSentTime;
     private Message mostRecentPongReceived;
     private int missedPongsCount;
     private Thread periodicPingThread;
     private Thread transactionMonitoringThread;
-    private LoginResponse mostRecentLoginResponse;
 
     private final Object txLock = new Object();
     private long txMonitorCheckFrequency = TimeUnit.SECONDS.toMillis(1);
@@ -56,7 +55,13 @@ public class Spi {
     private long maxWaitForCancelTx = TimeUnit.SECONDS.toMillis(10);
     private long missedPongsToDisconnect = 2;
 
+    private SpiPayAtTable spiPat;
+
+    private SpiPreauth spiPreauth;
+
     private Timer reconnectTimer;
+
+    final SpiConfig config = new SpiConfig();
 
     //endregion
 
@@ -99,7 +104,16 @@ public class Spi {
         mostRecentPingSent = null;
         mostRecentPongReceived = null;
         missedPongsCount = 0;
-        mostRecentLoginResponse = null;
+    }
+
+    public SpiPayAtTable enablePayAtTable() {
+        spiPat = new SpiPayAtTable(this);
+        return spiPat;
+    }
+
+    public SpiPreauth enablePreauth() {
+        spiPreauth = new SpiPreauth(this, txLock);
+        return spiPreauth;
     }
 
     /**
@@ -116,6 +130,7 @@ public class Spi {
 
         setCurrentFlow(SpiFlow.IDLE);
         if (secrets != null) {
+            LOG.info("Starting in paired state");
             currentStatus = SpiStatus.PAIRED_CONNECTING;
             try {
                 conn.connect(); // This is non-blocking
@@ -123,26 +138,9 @@ public class Spi {
                 LOG.error("Failed to connect", e);
             }
         } else {
+            LOG.info("Starting in unpaired state");
             currentStatus = SpiStatus.UNPAIRED;
         }
-    }
-
-    /**
-     * Stops all running processes and resets to state before starting.
-     * <p>
-     * Call this method when finished with SPI, e.g. when closing the application.
-     */
-    public void dispose() {
-        // Clean up threads
-        stopPeriodicPing();
-        stopTransactionMonitoring();
-
-        // Clean up connection
-        conn.dispose();
-
-        // Clean up timer
-        reconnectTimer.cancel();
-        reconnectTimer = null;
     }
 
     /**
@@ -168,9 +166,14 @@ public class Spi {
         return true;
     }
 
+    @NotNull
+    public static String getVersion() {
+        return null; // FIXME: Need to extract version from properties generated in Gradle
+    }
+
     //endregion
 
-    //region Public properties and events
+    //region Properties and events
 
     /**
      * The current status of this SPI instance.
@@ -293,7 +296,13 @@ public class Spi {
         }
     }
 
+    public SpiConfig getConfig() {
+        return config;
+    }
+
     //endregion
+
+    //region Flow management methods
 
     /**
      * Call this one when a flow is finished and you want to go back to idle state.
@@ -320,6 +329,8 @@ public class Spi {
         return false;
     }
 
+    //endregion
+
     //region Pairing flow methods
 
     /**
@@ -328,9 +339,19 @@ public class Spi {
      * Only call this if you are in the {@link SpiStatus#UNPAIRED} state.
      * <p>
      * Subscribe to {@link #setPairingFlowStateChangedHandler(EventHandler)} to get updates on the pairing process.
+     *
+     * @return Whether pairing has initiated or not.
      */
-    public void pair() {
-        if (getCurrentStatus() != SpiStatus.UNPAIRED) return;
+    public boolean pair() {
+        if (getCurrentStatus() != SpiStatus.UNPAIRED) {
+            LOG.warn("Tried to pair but we're already paired");
+            return false;
+        }
+
+        if (StringUtils.isWhitespace(posId) || StringUtils.isWhitespace(eftposAddress)) {
+            LOG.warn("Tried to pair but missing posId and/or eftposAddress");
+            return false;
+        }
 
         setCurrentFlow(SpiFlow.PAIRING);
 
@@ -350,6 +371,7 @@ public class Spi {
         } catch (DeploymentException e) {
             LOG.error("Failed to connect", e);
         }
+        return true;
     }
 
     /**
@@ -364,10 +386,12 @@ public class Spi {
         getCurrentPairingFlowState().setAwaitingCheckFromPos(false);
         if (getCurrentPairingFlowState().isAwaitingCheckFromEftpos()) {
             // But we are still waiting for confirmation from EFTPOS side.
+            LOG.info("Pair code confirmed from POS side, but I'm still waiting for confirmation from EFTPOS");
             getCurrentPairingFlowState().setMessage("Click YES on EFTPOS if code is: " + getCurrentPairingFlowState().getConfirmationCode());
             pairingFlowStateChanged();
         } else {
             // Already confirmed from EFTPOS - So all good now. We're Paired also from the POS perspective.
+            LOG.info("Pair code confirmed from POS side, and was already confirmed from EFTPOS side, pairing finalized");
             onPairingSuccess();
             onReadyToTransact();
         }
@@ -378,6 +402,13 @@ public class Spi {
      */
     public void pairingCancel() {
         if (getCurrentFlow() != SpiFlow.PAIRING || getCurrentPairingFlowState().isFinished()) return;
+
+        if (getCurrentPairingFlowState().isAwaitingCheckFromPos() &&
+                !getCurrentPairingFlowState().isAwaitingCheckFromEftpos()) {
+            // This means that the Eftpos already thinks it's paired.
+            // Let's tell it to drop keys
+            send(new DropKeysRequest().toMessage());
+        }
 
         onPairingFailed();
     }
@@ -395,15 +426,9 @@ public class Spi {
 
         if (getCurrentFlow() != SpiFlow.IDLE) return false;
 
-        setCurrentStatus(SpiStatus.UNPAIRED);
-
-        conn.disconnect();
-        secrets = null;
-        spiMessageStamp.setSecrets(null);
-        secretsChanged(secrets);
-
-        LOG.info("Unpairing complete.");
-
+        // Best effort letting the EFTPOS know that we're dropping the keys, so it can drop them as well.
+        send(new DropKeysRequest().toMessage());
+        doUnpair();
         return true;
     }
 
@@ -416,30 +441,69 @@ public class Spi {
      * <p>
      * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} to get updates on the process.
      *
-     * @param id          Alphanumeric identifier for your purchase.
-     * @param amountCents Amount in cents to charge.
+     * @param posRefId       Alphanumeric identifier for your purchase.
+     * @param purchaseAmount Amount in cents to charge.
      * @return Initiation result {@link InitiateTxResult}.
      */
     @NotNull
-    public InitiateTxResult initiatePurchaseTx(String id, int amountCents) {
+    public InitiateTxResult initiatePurchaseTx(String posRefId, int purchaseAmount) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         synchronized (txLock) {
             if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
 
-            final double amountDollars = amountCents / 100.0;
+            final PurchaseRequest request = PurchaseHelper.createPurchaseRequest(purchaseAmount, posRefId);
+            final Message message = request.toMessage();
 
-            final PurchaseRequest purchase = PurchaseHelper.createPurchaseRequest(amountCents, id);
             setCurrentFlow(SpiFlow.TRANSACTION);
             setCurrentTxFlowState(new TransactionFlowState(
-                    id, TransactionType.PURCHASE, amountCents, purchase.toMessage(),
-                    "Waiting for EFTPOS connection to make payment request for " + amountDollars));
+                    posRefId, TransactionType.PURCHASE, purchaseAmount, message,
+                    String.format("Waiting for EFTPOS connection to make payment request for %.2f", purchaseAmount / 100.0)));
 
-            if (send(purchase.toMessage())) {
-                getCurrentTxFlowState().sent("Asked EFTPOS to accept payment for " + amountDollars);
+            if (send(message)) {
+                getCurrentTxFlowState().sent(String.format("Asked EFTPOS to accept payment for %.2f", purchaseAmount / 100.0));
             }
         }
 
+        txFlowStateChanged();
+        return new InitiateTxResult(true, "Purchase Initiated");
+    }
+
+    /**
+     * Initiates a purchase transaction.
+     * <p>
+     * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} to get updates on the process.
+     *
+     * @param posRefId         Alphanumeric identifier for your purchase.
+     * @param purchaseAmount   Amount in cents to charge.
+     * @param tipAmount        The Tip Amount in cents.
+     * @param cashoutAmount    The cashout Amount in cents.
+     * @param promptForCashout Whether to prompt your customer for cashout on the EFTPOS.
+     * @return Initiation result {@link InitiateTxResult}.
+     */
+    @NotNull
+    public InitiateTxResult initiatePurchaseTx(String posRefId, int purchaseAmount, int tipAmount, int cashoutAmount, boolean promptForCashout) {
+        if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
+
+        if (tipAmount > 0 && (cashoutAmount > 0 || promptForCashout))
+            return new InitiateTxResult(false, "Cannot Accept Tips and Cashout at the same time.");
+
+        synchronized (txLock) {
+            if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
+            setCurrentFlow(SpiFlow.TRANSACTION);
+
+            final PurchaseRequest request = PurchaseHelper.createPurchaseRequest(purchaseAmount, posRefId, tipAmount, cashoutAmount, promptForCashout);
+            request.setConfig(config);
+            final Message message = request.toMessage();
+
+            setCurrentTxFlowState(new TransactionFlowState(
+                    posRefId, TransactionType.PURCHASE, purchaseAmount, message,
+                    "Waiting for EFTPOS connection to make payment request. " + request.amountSummary()));
+
+            if (send(message)) {
+                getCurrentTxFlowState().sent("Asked EFTPOS to accept payment for " + request.amountSummary());
+            }
+        }
         txFlowStateChanged();
         return new InitiateTxResult(true, "Purchase Initiated");
     }
@@ -449,27 +513,27 @@ public class Spi {
      * <p>
      * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} to get updates on the process.
      *
-     * @param id          Alphanumeric identifier for your refund.
-     * @param amountCents Amount in cents to charge.
+     * @param posRefId     Alphanumeric identifier for your refund.
+     * @param refundAmount Amount in cents to charge.
      * @return Initiation result {@link InitiateTxResult}.
      */
     @NotNull
-    public InitiateTxResult initiateRefundTx(String id, int amountCents) {
+    public InitiateTxResult initiateRefundTx(String posRefId, int refundAmount) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         synchronized (txLock) {
             if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
 
-            final double amountDollars = amountCents / 100.0;
+            final RefundRequest request = PurchaseHelper.createRefundRequest(refundAmount, posRefId);
+            final Message message = request.toMessage();
 
-            final RefundRequest purchase = PurchaseHelper.createRefundRequest(amountCents, id);
             setCurrentFlow(SpiFlow.TRANSACTION);
             setCurrentTxFlowState(new TransactionFlowState(
-                    id, TransactionType.REFUND, amountCents, purchase.toMessage(),
-                    "Waiting for EFTPOS connection to make refund request for " + amountDollars));
+                    posRefId, TransactionType.REFUND, refundAmount, message,
+                    String.format("Waiting for EFTPOS connection to make refund request for %.2f", refundAmount / 100.0)));
 
-            if (send(purchase.toMessage())) {
-                getCurrentTxFlowState().sent("Asked EFTPOS to refund " + amountDollars);
+            if (send(message)) {
+                getCurrentTxFlowState().sent(String.format("Asked EFTPOS to refund %.2f", refundAmount / 100.0));
             }
         }
 
@@ -481,12 +545,16 @@ public class Spi {
      * Let the EFTPOS know whether merchant accepted or declined the signature.
      *
      * @param accepted Whether merchant accepted the signature from customer or not.
+     * @return MidTxResult - false only if you called it in the wrong state.
      */
-    public void acceptSignature(boolean accepted) {
+    @NotNull
+    public MidTxResult acceptSignature(boolean accepted) {
         synchronized (txLock) {
-            if (getCurrentFlow() != SpiFlow.TRANSACTION || getCurrentTxFlowState().isFinished() || !getCurrentTxFlowState().isAwaitingSignatureCheck()) {
+            if (getCurrentFlow() != SpiFlow.TRANSACTION ||
+                    getCurrentTxFlowState().isFinished() ||
+                    !getCurrentTxFlowState().isAwaitingSignatureCheck()) {
                 LOG.info("Asked to accept signature but I was not waiting for one.");
-                return;
+                return new MidTxResult(false, "Asked to accept signature but I was not waiting for one.");
             }
 
             getCurrentTxFlowState().signatureResponded(accepted ? "Accepting Signature..." : "Declining Signature...");
@@ -495,6 +563,37 @@ public class Spi {
             send((accepted ? new SignatureAccept(sigReqId) : new SignatureDecline(sigReqId)).toMessage());
         }
         txFlowStateChanged();
+        return new MidTxResult(true, "");
+    }
+
+    /**
+     * Submit the Code obtained by your user when phoning for auth.
+     * It will return immediately to tell you whether the code has a valid format or not.
+     * If valid==true is returned, no need to do anything else. Expect updates via standard callback.
+     * If valid==false is returned, you can show your user the accompanying message, and invite them to enter another code.
+     *
+     * @param authCode The code obtained by your user from the merchant call centre. It should be a 6-character alpha-numeric value.
+     * @return Whether code has a valid format or not.
+     */
+    @NotNull
+    public SubmitAuthCodeResult submitAuthCode(String authCode) {
+        if (authCode.length() != 6) {
+            return new SubmitAuthCodeResult(false, "Not a 6-digit code.");
+        }
+
+        synchronized (txLock) {
+            if (getCurrentFlow() != SpiFlow.TRANSACTION ||
+                    getCurrentTxFlowState().isFinished() ||
+                    !getCurrentTxFlowState().isAwaitingPhoneForAuth()) {
+                LOG.info("Asked to send auth code but I was not waiting for one.");
+                return new SubmitAuthCodeResult(false, "Was not waiting for one.");
+            }
+
+            getCurrentTxFlowState().authCodeSent("Submitting Auth Code " + authCode);
+            send(new AuthCodeAdvice(getCurrentTxFlowState().getPosRefId(), authCode).toMessage());
+        }
+        txFlowStateChanged();
+        return new SubmitAuthCodeResult(true, "Valid Code.");
     }
 
     /**
@@ -503,12 +602,15 @@ public class Spi {
      * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} to see how it goes.
      * <p>
      * Wait for the transaction to be finished and then see whether cancellation was successful or not.
+     *
+     * @return MidTxResult - false only if you called it in the wrong state.
      */
-    public void cancelTransaction() {
+    @NotNull
+    public MidTxResult cancelTransaction() {
         synchronized (txLock) {
             if (getCurrentFlow() != SpiFlow.TRANSACTION || getCurrentTxFlowState().isFinished()) {
                 LOG.info("Asked to cancel transaction but I was not in the middle of one.");
-                return;
+                return new MidTxResult(false, "Asked to cancel transaction but I was not in the middle of one.");
             }
 
             // TH-1C, TH-3C - Merchant pressed cancel
@@ -521,8 +623,70 @@ public class Spi {
                 getCurrentTxFlowState().failed(null, "Transaction Cancelled. Request Had not even been sent yet.");
             }
         }
-
         txFlowStateChanged();
+        return new MidTxResult(true, "");
+    }
+
+    /**
+     * Initiates a cashout only transaction.
+     * <p>
+     * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} event to get updates on the process.
+     *
+     * @param posRefId    Alphanumeric identifier for your transaction.
+     * @param amountCents Amount in cents to cash out.
+     */
+    @NotNull
+    public InitiateTxResult initiateCashoutOnlyTx(String posRefId, int amountCents) {
+        if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
+
+        synchronized (txLock) {
+            if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
+
+            final CashoutOnlyRequest cashoutOnlyRequest = new CashoutOnlyRequest(amountCents, posRefId);
+            cashoutOnlyRequest.setConfig(config);
+            final Message cashoutMsg = cashoutOnlyRequest.toMessage();
+
+            setCurrentFlow(SpiFlow.TRANSACTION);
+            setCurrentTxFlowState(new TransactionFlowState(
+                    posRefId, TransactionType.CASHOUT_ONLY, amountCents, cashoutMsg,
+                    String.format("Waiting for EFTPOS connection to send cashout request for %.2f", amountCents / 100.0)));
+
+            if (send(cashoutMsg)) {
+                getCurrentTxFlowState().sent(String.format("Asked EFTPOS to do cashout for %.2f", amountCents / 100.0));
+            }
+        }
+        txFlowStateChanged();
+        return new InitiateTxResult(true, "Cashout Initiated");
+    }
+
+    /**
+     * Initiates a Mail Order / Telephone Order Purchase Transaction.
+     *
+     * @param posRefId    Alphanumeric identifier for your transaction.
+     * @param amountCents Amount in cents
+     */
+    @NotNull
+    public InitiateTxResult initiateMotoPurchaseTx(String posRefId, int amountCents) {
+        if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
+
+        synchronized (txLock) {
+            if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
+
+            final MotoPurchaseRequest request = new MotoPurchaseRequest(amountCents, posRefId);
+            request.setConfig(config);
+            final Message message = request.toMessage();
+
+            setCurrentFlow(SpiFlow.TRANSACTION);
+            setCurrentTxFlowState(new TransactionFlowState(
+                    posRefId, TransactionType.MOTO, amountCents, message,
+                    String.format("Waiting for EFTPOS connection to send MOTO request for %.2f", amountCents / 100.0)));
+
+            if (send(message)) {
+                getCurrentTxFlowState().sent(String.format("Asked EFTPOS do MOTO for %.2f", amountCents / 100.0));
+            }
+        }
+        txFlowStateChanged();
+        return new InitiateTxResult(true, "MOTO Initiated");
     }
 
     /**
@@ -547,7 +711,31 @@ public class Spi {
                 getCurrentTxFlowState().sent("Asked EFTPOS to settle.");
             }
         }
+        txFlowStateChanged();
+        return new InitiateTxResult(true, "Settle Initiated");
+    }
 
+    /**
+     * Initiates settlement enquiry operation.
+     */
+    @NotNull
+    public InitiateTxResult initiateSettlementEnquiry(String posRefId) {
+        if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
+
+        synchronized (txLock) {
+            if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
+
+            final Message message = new SettlementEnquiryRequest(RequestIdHelper.id("stlenq")).toMessage();
+
+            setCurrentFlow(SpiFlow.TRANSACTION);
+            setCurrentTxFlowState(new TransactionFlowState(
+                    posRefId, TransactionType.SETTLEMENT_ENQUIRY, 0, message,
+                    "Waiting for EFTPOS connection to make a settlement enquiry"));
+
+            if (send(message)) {
+                getCurrentTxFlowState().sent("Asked EFTPOS to make a settlement enquiry.");
+            }
+        }
         txFlowStateChanged();
         return new InitiateTxResult(true, "Settle Initiated");
     }
@@ -565,19 +753,70 @@ public class Spi {
         synchronized (txLock) {
             if (currentFlow != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
 
-            final Message gltRequestMsg = new GetLastTransactionRequest().toMessage();
+            final Message message = new GetLastTransactionRequest().toMessage();
+
             setCurrentFlow(SpiFlow.TRANSACTION);
             setCurrentTxFlowState(new TransactionFlowState(
-                    gltRequestMsg.getId(), TransactionType.GET_LAST_TRANSACTION, 0, gltRequestMsg,
+                    message.getId(), TransactionType.GET_LAST_TRANSACTION, 0, message,
                     "Waiting for EFTPOS connection to make a Get-Last-Transaction request"));
 
-            if (send(gltRequestMsg)) {
+            if (send(message)) {
                 getCurrentTxFlowState().sent("Asked EFTPOS to Get Last Transaction.");
             }
         }
-
         txFlowStateChanged();
         return new InitiateTxResult(true, "GLT Initiated");
+    }
+
+    /**
+     * This is useful to recover from your POS crashing in the middle of a transaction.
+     * When you restart your POS, if you had saved enough state, you can call this method to recover the client library state.
+     * You need to have the posRefId that you passed in with the original transaction, and the transaction type.
+     * This method will return immediately whether recovery has started or not.
+     * If recovery has started, you need to bring up the transaction modal to your user a be listening to TxFlowStateChanged.
+     *
+     * @param posRefId The is that you had assigned to the transaction that you are trying to recover.
+     * @param txType   The transaction type.
+     */
+    @NotNull
+    public InitiateTxResult initiateRecovery(String posRefId, TransactionType txType) {
+        if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
+
+        synchronized (txLock) {
+            if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
+
+            final Message message = new GetLastTransactionRequest().toMessage();
+
+            setCurrentFlow(SpiFlow.TRANSACTION);
+            setCurrentTxFlowState(new TransactionFlowState(
+                    posRefId, txType, 0, message,
+                    "Waiting for EFTPOS connection to attempt recovery."));
+
+            if (send(message)) {
+                getCurrentTxFlowState().sent("Asked EFTPOS to recover state.");
+            }
+        }
+        txFlowStateChanged();
+        return new InitiateTxResult(true, "Recovery Initiated");
+    }
+
+    /**
+     * GltMatch attempts to conclude whether a gltResponse matches an expected transaction and returns the outcome.
+     * If Success/Failed is returned, it means that the gtlResponse did match, and that transaction was successful/failed.
+     * If Unknown is returned, it means that the gltResponse does not match the expected transaction.
+     *
+     * @param gltResponse The GetLastTransactionResponse message to check.
+     * @param posRefId    The Reference Id that you passed in with the original request.
+     */
+    @NotNull
+    public Message.SuccessState gltMatch(@NotNull GetLastTransactionResponse gltResponse, @NotNull String posRefId) {
+        LOG.info("GLT CHECK: PosRefId: " + posRefId + "->" + gltResponse.getPosRefId());
+
+        if (!posRefId.equals(gltResponse.getPosRefId())) {
+            return Message.SuccessState.UNKNOWN;
+        }
+
+        return gltResponse.getSuccessState();
     }
 
     /**
@@ -594,40 +833,13 @@ public class Spi {
      * @param expectedAmount The expected amount in cents.
      * @param requestTime    The time you made your request.
      * @param posRefId       The reference ID that you passed in with the original request. Currently not used.
+     * @deprecated Use {@link #gltMatch(GetLastTransactionResponse, String)} instead.
      */
+    @Deprecated
     @NotNull
     public Message.SuccessState gltMatch(@NotNull GetLastTransactionResponse gltResponse, @NotNull TransactionType expectedType,
                                          int expectedAmount, long requestTime, String posRefId) {
-        final long gtlBankTime;
-        try {
-            gtlBankTime = new SimpleDateFormat("ddMMyyyyHHmmss").parse(gltResponse.getBankDateTimeString()).getTime();
-        } catch (ParseException e) {
-            LOG.error("Cannot parse date: " + gltResponse.getBankDateTimeString());
-            return Message.SuccessState.UNKNOWN;
-        }
-
-        // adjust request time for serverTime and also give 5 seconds slack.
-        final long reqServerTime = requestTime + spiMessageStamp.getServerTimeDelta() - 5000;
-        final int gltAmount = gltResponse.getTransactionAmount();
-
-        // For now we use amount and date to match as best we can.
-        // In the future we will be able to pass our own pos_ref_id in the tx request that will be returned here.
-        LOG.info("GLT CHECK: Type: {" + expectedType + "}->{" + gltResponse.getTxType() + "} Amount: {" + expectedAmount + "}->{" + gltAmount + "}, Date: {" + reqServerTime + "}->{" + gtlBankTime + "}");
-
-        if (gltAmount != expectedAmount) return Message.SuccessState.UNKNOWN;
-
-        final String txType = gltResponse.getTxType();
-        if ("PURCHASE".equals(txType)) {
-            if (expectedType != TransactionType.PURCHASE) return Message.SuccessState.UNKNOWN;
-        } else if ("REFUND".equals(txType)) {
-            if (expectedType != TransactionType.REFUND) return Message.SuccessState.UNKNOWN;
-        } else {
-            return Message.SuccessState.UNKNOWN;
-        }
-
-        if (reqServerTime > gtlBankTime) return Message.SuccessState.UNKNOWN;
-
-        return gltResponse.getSuccessState();
+        return gltMatch(gltResponse, posRefId);
     }
 
     //endregion
@@ -680,12 +892,18 @@ public class Spi {
             } else {
                 onPairingSuccess();
             }
+
             // I need to ping/login even if the pos user has not said yes yet,
             // because otherwise within 5 seconds connecting will be dropped by EFTPOS.
             startPeriodicPing();
         } else {
             onPairingFailed();
         }
+    }
+
+    private void handleDropKeysAdvice(Message m) {
+        LOG.info("Eftpos was Unpaired. I shall unpair from my end as well.");
+        doUnpair();
     }
 
     private void onPairingSuccess() {
@@ -712,6 +930,14 @@ public class Spi {
         pairingFlowStateChanged();
     }
 
+    private void doUnpair() {
+        setCurrentStatus(SpiStatus.UNPAIRED);
+        conn.disconnect();
+        secrets = null;
+        spiMessageStamp.setSecrets(null);
+        secretsChanged(secrets);
+    }
+
     /**
      * Sometimes the server asks us to roll our secrets.
      */
@@ -729,17 +955,30 @@ public class Spi {
     //region Internals for transaction management
 
     /**
-     * The pin pad server will send us this message when a customer signature is required.
+     * The PIN pad server will send us this message when a customer signature is required.
      * We need to ask the customer to sign the incoming receipt.
      * And then tell the pin pad whether the signature is ok or not.
      */
     private void handleSignatureRequired(@NotNull Message m) {
         synchronized (txLock) {
-            if (getCurrentFlow() != SpiFlow.TRANSACTION || getCurrentTxFlowState().isFinished()) {
-                LOG.info("Received Signature Required but I was not waiting for one. " + m.getDecryptedJson());
-                return;
-            }
+            if (isTxResponseUnexpected(m, "Signature Required", true)) return;
+
             getCurrentTxFlowState().signatureRequired(new SignatureRequired(m), "Ask Customer to Sign the Receipt");
+        }
+        txFlowStateChanged();
+    }
+
+    /**
+     * The PIN pad server will send us this message when an auth code is required.
+     */
+    private void handleAuthCodeRequired(@NotNull Message m) {
+        synchronized (txLock) {
+            if (isTxResponseUnexpected(m, "Auth Code Required", true)) return;
+
+            final PhoneForAuthRequired phoneForAuthRequired = new PhoneForAuthRequired(m);
+            final String msg = "Auth Code Required. Call " + phoneForAuthRequired.getPhoneNumber() +
+                    " and quote merchant id " + phoneForAuthRequired.getMerchantId();
+            getCurrentTxFlowState().phoneForAuthRequired(phoneForAuthRequired, msg);
         }
         txFlowStateChanged();
     }
@@ -748,35 +987,76 @@ public class Spi {
      * The PIN pad server will reply to our {@link PurchaseRequest} with a {@link PurchaseResponse}.
      */
     private void handlePurchaseResponse(@NotNull Message m) {
-        handleTxResponse(m, TransactionType.PURCHASE);
+        handleTxResponse(m, TransactionType.PURCHASE, true);
+    }
+
+    /**
+     * The PIN pad server will reply to our {@link CashoutOnlyRequest} with a {@link CashoutOnlyResponse}.
+     */
+    private void handleCashoutOnlyResponse(@NotNull Message m) {
+        handleTxResponse(m, TransactionType.CASHOUT_ONLY, true);
+    }
+
+    /**
+     * The PIN pad server will reply to our {@link MotoPurchaseRequest} with a {@link MotoPurchaseResponse}.
+     */
+    private void handleMotoPurchaseResponse(@NotNull Message m) {
+        handleTxResponse(m, TransactionType.MOTO, true);
     }
 
     /**
      * The PIN pad server will reply to our {@link RefundRequest} with a {@link RefundResponse}.
      */
     private void handleRefundResponse(@NotNull Message m) {
-        handleTxResponse(m, TransactionType.REFUND);
+        handleTxResponse(m, TransactionType.REFUND, true);
     }
 
-    // TODO: Handle the settlement response received from the PIN pad
+    /**
+     * Handle the {@link Settlement} response received from the PIN pad.
+     */
     private void handleSettleResponse(@NotNull Message m) {
-        handleTxResponse(m, TransactionType.SETTLE);
+        handleTxResponse(m, TransactionType.SETTLE, false);
     }
 
-    private void handleTxResponse(@NotNull Message m, @NotNull TransactionType type) {
+    /**
+     * Handle the Settlement Enquiry Response received from the PIN pad.
+     */
+    private void handleSettlementEnquiryResponse(Message m) {
+        handleTxResponse(m, TransactionType.SETTLEMENT_ENQUIRY, false);
+    }
+
+    private void handleTxResponse(@NotNull Message m, @NotNull TransactionType type, boolean checkPosRefId) {
         synchronized (txLock) {
-            final TransactionFlowState currentState = getCurrentTxFlowState();
+            if (isTxResponseUnexpected(m, type.getName(), checkPosRefId)) return;
 
-            if (getCurrentFlow() != SpiFlow.TRANSACTION || currentState.isFinished()) {
-                LOG.info("Received " + type + " response but I was not waiting for one. " + m.getDecryptedJson());
-                return;
-            }
-            // TH-1A, TH-2A
-
-            currentState.completed(m.getSuccessState(), m, type + " transaction ended.");
+            getCurrentTxFlowState().completed(m.getSuccessState(), m, type + " transaction ended.");
             // TH-6A, TH-6E
         }
         txFlowStateChanged();
+    }
+
+    /**
+     * Verifies transaction response (TH-1A, TH-2A).
+     */
+    private boolean isTxResponseUnexpected(@NotNull Message m, @NotNull String typeName, boolean checkPosRefId) {
+        final TransactionFlowState currentState = getCurrentTxFlowState();
+
+        final String incomingPosRefId;
+        final boolean posRefIdMatched;
+        if (checkPosRefId) {
+            incomingPosRefId = m.getDataStringValue("pos_ref_id");
+            posRefIdMatched = currentState.getPosRefId().equals(incomingPosRefId);
+        } else {
+            incomingPosRefId = null;
+            posRefIdMatched = true;
+        }
+
+        if (getCurrentFlow() != SpiFlow.TRANSACTION || currentState.isFinished() || !posRefIdMatched) {
+            String trace = checkPosRefId ? "Incoming Pos Ref ID: " + incomingPosRefId : m.getDecryptedJson();
+            LOG.info("Received " + typeName + " response but I was not waiting for one. " + trace);
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -833,8 +1113,7 @@ public class Spi {
                     txState.completed(m.getSuccessState(), m, "Last transaction retrieved");
                 } else {
                     // TH-4A - Let's try to match the received last transaction against the current transaction
-                    final Message.SuccessState successState = gltMatch(gltResponse, txState.getType(),
-                            txState.getAmountCents(), txState.getRequestTime(), "_NOT_IMPL_YET");
+                    final Message.SuccessState successState = gltMatch(gltResponse, txState.getPosRefId());
                     if (successState == Message.SuccessState.UNKNOWN) {
                         // TH-4N: Didn't Match our transaction. Consider Unknown State.
                         LOG.info("Did not match transaction.");
@@ -951,7 +1230,6 @@ public class Spi {
                 mostRecentPingSent = null;
                 mostRecentPongReceived = null;
                 missedPongsCount = 0;
-                mostRecentLoginResponse = null;
                 readyToTransact = false;
                 stopPeriodicPing();
 
@@ -1060,6 +1338,8 @@ public class Spi {
      * This function is effectively called after we received the first login response from the PIN pad.
      */
     private void onReadyToTransact() {
+        LOG.info("On Ready To Transact!");
+
         // So, we have just made a connection, pinged and logged in successfully.
         setCurrentStatus(SpiStatus.PAIRED_CONNECTED);
 
@@ -1076,6 +1356,11 @@ public class Spi {
                     getCurrentTxFlowState().sent("Asked EFTPOS to accept payment for " + (getCurrentTxFlowState()).getAmountCents() / 100.0);
                     txFlowStateChanged();
                 }
+            } else {
+                final SpiPayAtTable spiPat = this.spiPat;
+                if (spiPat != null) {
+                    spiPat.pushPayAtTableConfig();
+                }
             }
         }
     }
@@ -1087,6 +1372,7 @@ public class Spi {
         final Message ping = PingHelper.generatePingRequest();
         mostRecentPingSent = ping;
         send(ping);
+        mostRecentPingSentTime = System.currentTimeMillis();
     }
 
     /**
@@ -1096,53 +1382,18 @@ public class Spi {
         // We need to maintain this time delta otherwise the server will not accept our messages.
         spiMessageStamp.setServerTimeDelta(m.getServerTimeDelta());
 
-        boolean needLogin = true;
-        try {
-            if (mostRecentLoginResponse != null &&
-                    !mostRecentLoginResponse.expiringSoon(spiMessageStamp.getServerTimeDelta())) {
-                needLogin = false;
-            }
-        } catch (ParseException e) {
-            LOG.warn("Failed to parse server time delta: " + spiMessageStamp.getServerTimeDelta());
-        }
-
-        if (needLogin) {
-            // We have not logged in yet, or login expiring soon.
-            doLogin();
-        }
-        mostRecentPongReceived = m;
-    }
-
-    /**
-     * Login is a mute thing but is required.
-     */
-    private void doLogin() {
-        final LoginRequest lr = LoginHelper.newLoginRequest();
-        send(lr.toMessage());
-    }
-
-    /**
-     * When the server replied to our LoginRequest with a LoginResponse, we take note of it.
-     */
-    private void handleLoginResponse(@NotNull Message m) {
-        final LoginResponse lr = new LoginResponse(m);
-        if (lr.isSuccess()) {
-            mostRecentLoginResponse = lr;
-
-            if (!readyToTransact) {
-                // We are finally ready to make transactions.
-                // Let's notify ourselves so we can take some actions.
-                readyToTransact = true;
-                LOG.info("Logged in successfully. Expires: " + lr.getExpires());
-                if (getCurrentStatus() != SpiStatus.UNPAIRED)
-                    onReadyToTransact();
+        if (mostRecentPongReceived == null) {
+            // First pong received after a connection, and after the pairing process is fully finalised.
+            if (getCurrentStatus() != SpiStatus.UNPAIRED) {
+                LOG.info("First pong of connection and in paired state");
+                onReadyToTransact();
             } else {
-                LOG.info("I have just refreshed my login. Now expires: " + lr.getExpires());
+                LOG.info("First pong of connection but pairing process not finalised yet.");
             }
-        } else {
-            LOG.info("Logged in failure.");
-            conn.disconnect();
         }
+
+        mostRecentPongReceived = m;
+        LOG.debug("PongLatency:" + (System.currentTimeMillis() - mostRecentPingSentTime));
     }
 
     /**
@@ -1168,6 +1419,14 @@ public class Spi {
         final Message m = Message.fromJson(messageJson, secrets);
         LOG.debug("Received: " + m.getDecryptedJson());
 
+        if (SpiPreauth.isPreauthEvent(m.getEventName())) {
+            final SpiPreauth spiPreauth = this.spiPreauth;
+            if (spiPreauth != null) {
+                spiPreauth.handlePreauthMessage(m);
+            }
+            return;
+        }
+
         // And then we switch on the event type.
         final String eventName = m.getEventName();
         if (Events.KEY_REQUEST.equals(eventName)) {
@@ -1176,16 +1435,24 @@ public class Spi {
             handleKeyCheck(m);
         } else if (Events.PAIR_RESPONSE.equals(eventName)) {
             handlePairResponse(m);
-        } else if (Events.LOGIN_RESPONSE.equals(eventName)) {
-            handleLoginResponse(m);
+        } else if (Events.DROP_KEYS_ADVICE.equals(eventName)) {
+            handleDropKeysAdvice(m);
         } else if (Events.PURCHASE_RESPONSE.equals(eventName)) {
             handlePurchaseResponse(m);
         } else if (Events.REFUND_RESPONSE.equals(eventName)) {
             handleRefundResponse(m);
+        } else if (Events.CASHOUT_ONLY_RESPONSE.equals(eventName)) {
+            handleCashoutOnlyResponse(m);
+        } else if (Events.MOTO_PURCHASE_RESPONSE.equals(eventName)) {
+            handleMotoPurchaseResponse(m);
         } else if (Events.SIGNATURE_REQUIRED.equals(eventName)) {
             handleSignatureRequired(m);
+        } else if (Events.AUTH_CODE_REQUIRED.equals(eventName)) {
+            handleAuthCodeRequired(m);
         } else if (Events.GET_LAST_TRANSACTION_RESPONSE.equals(eventName)) {
             handleGetLastTransactionResponse(m);
+        } else if (Events.SETTLEMENT_ENQUIRY_RESPONSE.equals(eventName)) {
+            handleSettlementEnquiryResponse(m);
         } else if (Events.SETTLE_RESPONSE.equals(eventName)) {
             handleSettleResponse(m);
         } else if (Events.PING.equals(eventName)) {
@@ -1194,6 +1461,23 @@ public class Spi {
             handleIncomingPong(m);
         } else if (Events.KEY_ROLL_REQUEST.equals(eventName)) {
             handleKeyRollingRequest(m);
+        } else if (Events.PAY_AT_TABLE_GET_TABLE_CONFIG.equals(eventName)) {
+            final SpiPayAtTable spiPat = this.spiPat;
+            if (spiPat != null) {
+                spiPat.handleGetTableConfig(m);
+            } else {
+                send(PayAtTableConfig.featureDisableMessage(RequestIdHelper.id("patconf")));
+            }
+        } else if (Events.PAY_AT_TABLE_GET_BILL_DETAILS.equals(eventName)) {
+            final SpiPayAtTable spiPat = this.spiPat;
+            if (spiPat != null) {
+                spiPat.handleGetBillDetailsRequest(m);
+            }
+        } else if (Events.PAY_AT_TABLE_BILL_PAYMENT.equals(eventName)) {
+            final SpiPayAtTable spiPat = this.spiPat;
+            if (spiPat != null) {
+                spiPat.handleBillPaymentAdvice(m);
+            }
         } else if (Events.ERROR.equals(eventName)) {
             handleErrorEvent(m);
         } else if (Events.INVALID_HMAC_SIGNATURE.equals(eventName)) {
@@ -1217,6 +1501,30 @@ public class Spi {
             LOG.debug("Asked to send, but not connected: " + message.getDecryptedJson());
             return false;
         }
+    }
+
+    //endregion
+
+    //region Disposal
+
+    /**
+     * Stops all running processes and resets to state before starting.
+     * <p>
+     * Call this method when finished with SPI, e.g. when closing the application.
+     */
+    public void dispose() {
+        LOG.info("Disposing...");
+
+        // Clean up threads
+        stopPeriodicPing();
+        stopTransactionMonitoring();
+
+        // Clean up connection
+        conn.dispose();
+
+        // Clean up timer
+        reconnectTimer.cancel();
+        reconnectTimer = null;
     }
 
     //endregion

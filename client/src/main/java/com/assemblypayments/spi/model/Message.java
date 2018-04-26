@@ -186,7 +186,7 @@ public class Message {
     public long getServerTimeDelta() {
         final long now = System.currentTimeMillis();
         try {
-            final long msgTime = new SimpleDateFormat(DATE_TIME_FORMAT).parse(dateTimeStamp).getTime();
+            final long msgTime = new SimpleDateFormat(DATE_TIME_FORMAT, Locale.US).parse(dateTimeStamp).getTime();
             return msgTime - now;
         } catch (ParseException e) {
             throw new RuntimeException(e);
@@ -196,7 +196,7 @@ public class Message {
     public String toJson(MessageStamp stamp) {
         final long now = System.currentTimeMillis();
         final long adjustedTime = now + stamp.getServerTimeDelta();
-        dateTimeStamp = new SimpleDateFormat(DATE_TIME_FORMAT).format(new Date(adjustedTime));
+        dateTimeStamp = new SimpleDateFormat(DATE_TIME_FORMAT, Locale.US).format(new Date(adjustedTime));
 
         if (!needsEncryption) {
             // Unencrypted Messages need PosID inside the message

@@ -14,10 +14,12 @@ public class TransactionFlowState {
     private long lastStateRequestTime;
     private boolean attemptingToCancel;
     private boolean awaitingSignatureCheck;
+    private boolean awaitingPhoneForAuth;
     private boolean finished;
     private Message.SuccessState success;
     private Message response;
     private SignatureRequired signatureRequiredMessage;
+    private PhoneForAuthRequired phoneForAuthRequiredMessage;
     private long cancelAttemptTime;
     private Message request;
     private boolean awaitingGltResponse;
@@ -71,6 +73,17 @@ public class TransactionFlowState {
 
     public void signatureResponded(String msg) {
         this.awaitingSignatureCheck = false;
+        this.displayMessage = msg;
+    }
+
+    public void phoneForAuthRequired(PhoneForAuthRequired spiMessage, String msg) {
+        this.phoneForAuthRequiredMessage = spiMessage;
+        this.awaitingPhoneForAuth = true;
+        this.displayMessage = msg;
+    }
+
+    public void authCodeSent(String msg) {
+        this.awaitingPhoneForAuth = false;
         this.displayMessage = msg;
     }
 
@@ -245,6 +258,22 @@ public class TransactionFlowState {
     }
 
     /**
+     * @return When this flag is on, you need to show your user the phone number to call to get the authorisation code.
+     * Then you need to provide your user means to enter that given code and submit it via SubmitAuthCode().
+     */
+    public boolean isAwaitingPhoneForAuth() {
+        return awaitingPhoneForAuth;
+    }
+
+    /**
+     * @param awaitingPhoneForAuth When this flag is on, you need to show your user the phone number to call to get the authorisation code.
+     *                             Then you need to provide your user means to enter that given code and submit it via SubmitAuthCode().
+     */
+    public void setAwaitingPhoneForAuth(boolean awaitingPhoneForAuth) {
+        this.awaitingPhoneForAuth = awaitingPhoneForAuth;
+    }
+
+    /**
      * @return Whether this transaction flow is over or not.
      */
     public boolean isFinished() {
@@ -306,6 +335,20 @@ public class TransactionFlowState {
      */
     public void setSignatureRequiredMessage(SignatureRequired signatureRequiredMessage) {
         this.signatureRequiredMessage = signatureRequiredMessage;
+    }
+
+    /**
+     * @return The message the we received from EFTPOS that told us that Phone For Auth is required.
+     */
+    public PhoneForAuthRequired getPhoneForAuthRequiredMessage() {
+        return phoneForAuthRequiredMessage;
+    }
+
+    /**
+     * @param phoneForAuthRequiredMessage The message the we received from EFTPOS that told us that Phone For Auth is required.
+     */
+    public void setPhoneForAuthRequiredMessage(PhoneForAuthRequired phoneForAuthRequiredMessage) {
+        this.phoneForAuthRequiredMessage = phoneForAuthRequiredMessage;
     }
 
     /**

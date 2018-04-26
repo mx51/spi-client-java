@@ -4,6 +4,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class Settlement extends AbstractTransactionResponse {
@@ -32,7 +33,7 @@ public class Settlement extends AbstractTransactionResponse {
         final String timeStr = m.getDataStringValue("settlement_period_start_time"); // "05:00"
         final String dateStr = m.getDataStringValue("settlement_period_start_date"); // "05Oct17"
         try {
-            return new SimpleDateFormat("HH:mmddMMMyy").parse(timeStr + dateStr).getTime();
+            return new SimpleDateFormat("HH:mmddMMMyy", Locale.US).parse(timeStr + dateStr).getTime();
         } catch (ParseException e) {
             throw new RuntimeException("Cannot parse PeriodStartTime", e);
         }
@@ -42,7 +43,7 @@ public class Settlement extends AbstractTransactionResponse {
         final String timeStr = m.getDataStringValue("settlement_period_end_time"); // "05:00"
         final String dateStr = m.getDataStringValue("settlement_period_end_date"); // "05Oct17"
         try {
-            return new SimpleDateFormat("HH:mmddMMMyy").parse(timeStr + dateStr).getTime();
+            return new SimpleDateFormat("HH:mmddMMMyy", Locale.US).parse(timeStr + dateStr).getTime();
         } catch (ParseException e) {
             throw new RuntimeException("Cannot parse PeriodEndTime", e);
         }
@@ -52,7 +53,7 @@ public class Settlement extends AbstractTransactionResponse {
         final String timeStr = m.getDataStringValue("settlement_triggered_time"); // "05:00:45"
         final String dateStr = m.getDataStringValue("settlement_triggered_date"); // "05Oct17"
         try {
-            return new SimpleDateFormat("HH:mm:ssddMMMyy").parse(timeStr + dateStr).getTime();
+            return new SimpleDateFormat("HH:mm:ssddMMMyy", Locale.US).parse(timeStr + dateStr).getTime();
         } catch (ParseException e) {
             throw new RuntimeException("Cannot parse TriggeredTime", e);
         }
