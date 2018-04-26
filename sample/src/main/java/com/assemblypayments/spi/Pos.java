@@ -56,6 +56,7 @@ public class Pos {
         // And Now we just accept user input and display to the user what is happening.
         SystemHelper.clearConsole();
         System.out.println("# Welcome! My name is " + posId + ".");
+        System.out.println("# Version: " + Spi.getVersion());
 
         printStatusAndActions();
         acceptUserInput();

@@ -9,10 +9,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.websocket.DeploymentException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
 /**
  * SPI integration client, used to manage connection to the terminal.
@@ -167,7 +171,23 @@ public class Spi {
 
     @NotNull
     public static String getVersion() {
-        return null; // FIXME: Need to extract version from properties generated in Gradle
+        final Class<?> cl = Spi.class;
+
+        final InputStream manifestIs = cl.getClassLoader().getResourceAsStream("META-INF/MANIFEST.MF");
+        if (manifestIs != null) {
+            try {
+                final Manifest manifest = new Manifest(manifestIs);
+                final String pkg = cl.getPackage().getName().replaceAll("\\.", "/");
+
+                final Attributes attrs = manifest.getAttributes(pkg);
+                if (attrs != null) {
+                    return attrs.getValue("Bundle-Version");
+                }
+            } catch (IOException e) {
+                LOG.warn("Cannot retrieve version, possibly running interactively");
+            }
+        }
+        return "UNKNOWN"; // FIXME: Need to extract version from properties generated in Gradle
     }
 
     //endregion
