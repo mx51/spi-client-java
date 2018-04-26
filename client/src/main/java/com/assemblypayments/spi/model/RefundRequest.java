@@ -1,33 +1,45 @@
 package com.assemblypayments.spi.model;
 
 import com.assemblypayments.spi.util.Events;
+import com.assemblypayments.spi.util.RequestIdHelper;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class RefundRequest implements Message.Compatible {
+public class RefundRequest extends AbstractChargeRequest implements Message.Compatible {
 
-    private final int amountCents;
-    private final String id;
+    private final int refundAmount;
 
-    public RefundRequest(int amountCents, String id) {
-        this.amountCents = amountCents;
-        this.id = id;
+    public RefundRequest(int amountCents, String posRefId) {
+        super(posRefId);
+        this.refundAmount = amountCents;
     }
 
-    public int getAmountCents() {
-        return amountCents;
+    public int getRefundAmount() {
+        return refundAmount;
     }
 
+    /**
+     * @deprecated Use {@link #getPosRefId()} instead.
+     */
+    @Deprecated
     public String getId() {
-        return id;
+        return getPosRefId();
+    }
+
+    /**
+     * @deprecated Use {@link #getRefundAmount()} instead.
+     */
+    @Deprecated
+    public int getAmountCents() {
+        return getRefundAmount();
     }
 
     @Override
     public Message toMessage() {
         final Map<String, Object> data = new HashMap<String, Object>();
-        data.put("amount_purchase", amountCents);
-        return new Message(id, Events.REFUND_REQUEST, data, true);
+        data.put("refund_amount", getRefundAmount());
+        return toMessage(RequestIdHelper.id("refund"), Events.REFUND_REQUEST, data, true);
     }
 
 }

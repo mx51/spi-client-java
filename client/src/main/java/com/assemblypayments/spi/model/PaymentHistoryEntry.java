@@ -12,6 +12,14 @@ public class PaymentHistoryEntry {
     @SerializedName("payment_summary")
     private Map<String, Object> paymentSummary;
 
+    public PaymentHistoryEntry() {
+    }
+
+    public PaymentHistoryEntry(String paymentType, Map<String, Object> paymentSummary) {
+        this.paymentType = paymentType;
+        this.paymentSummary = paymentSummary;
+    }
+
     public String getPaymentType() {
         return paymentType;
     }
@@ -26,7 +34,7 @@ public class PaymentHistoryEntry {
         return null;
     }
 
-    public static class List extends ArrayList<PaymentHistoryEntry> {
+    public static class ListType extends ArrayList<PaymentHistoryEntry> {
     }
 
 }

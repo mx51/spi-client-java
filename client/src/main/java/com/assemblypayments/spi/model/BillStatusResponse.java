@@ -117,17 +117,16 @@ public class BillStatusResponse {
         this.billData = billData;
     }
 
-    List<PaymentHistoryEntry> getBillPaymentHistory() {
+    public List<PaymentHistoryEntry> getBillPaymentHistory() {
         final String billData = this.billData;
         if (StringUtils.isWhitespace(billData)) return new ArrayList<PaymentHistoryEntry>();
 
         final byte[] bdArray = Base64.decodeBase64(billData);
         final String bdStr = new String(bdArray, Charsets.UTF8_CHARSET);
-        return GSON.fromJson(bdStr, PaymentHistoryEntry.List.class);
+        return GSON.fromJson(bdStr, PaymentHistoryEntry.ListType.class);
     }
 
-
-    static String toBillData(List<PaymentHistoryEntry> ph) {
+    public static String toBillData(List<PaymentHistoryEntry> ph) {
         if (ph.isEmpty()) return "";
 
         final String bphStr = GSON.toJson(ph);

@@ -206,7 +206,7 @@ public class Spi {
     /**
      * The current flow that this SPI instance is currently in.
      */
-    private void setCurrentFlow(@NotNull SpiFlow value) {
+    void setCurrentFlow(@NotNull SpiFlow value) {
         currentFlow = value;
     }
 
@@ -234,7 +234,7 @@ public class Spi {
     /**
      * When current flow is {@link SpiFlow#TRANSACTION}, this represents the state of the transaction process.
      */
-    private void setCurrentTxFlowState(TransactionFlowState state) {
+    void setCurrentTxFlowState(TransactionFlowState state) {
         currentTxFlowState = state;
     }
 
@@ -281,7 +281,7 @@ public class Spi {
         }
     }
 
-    private void txFlowStateChanged() {
+    void txFlowStateChanged() {
         if (txFlowStateChangedHandler != null) {
             txFlowStateChangedHandler.onEvent(getCurrentTxFlowState());
         }
@@ -1149,8 +1149,7 @@ public class Spi {
      * The server will also send us pings. We need to reply with a pong so it doesn't disconnect us.
      */
     private void handleIncomingPing(@NotNull Message m) {
-        final Message pong = PongHelper.generatePongResponse(m);
-        send(pong);
+        send(PongHelper.generatePongResponse(m));
     }
 
     /**
@@ -1208,7 +1207,7 @@ public class Spi {
         LOG.warn("Received WS error: " + error);
     }
 
-    private boolean send(Message message) {
+    boolean send(Message message) {
         final String json = message.toJson(spiMessageStamp);
         if (conn.isConnected()) {
             LOG.debug("Sending: " + message.getDecryptedJson());
