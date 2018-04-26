@@ -41,7 +41,6 @@ public class Spi {
     private EventHandler<TransactionFlowState> txFlowStateChangedHandler;
     private EventHandler<Secrets> secretsChangedHandler;
 
-    private boolean readyToTransact;
     private Message mostRecentPingSent;
     private long mostRecentPingSentTime;
     private Message mostRecentPongReceived;
@@ -1230,7 +1229,6 @@ public class Spi {
                 mostRecentPingSent = null;
                 mostRecentPongReceived = null;
                 missedPongsCount = 0;
-                readyToTransact = false;
                 stopPeriodicPing();
 
                 if (getCurrentStatus() != SpiStatus.UNPAIRED) {
@@ -1306,7 +1304,6 @@ public class Spi {
                         // Let's Disconnect.
                         LOG.warn("Disconnecting...");
                         conn.disconnect();
-                        readyToTransact = false;
                         break;
                     }
 
