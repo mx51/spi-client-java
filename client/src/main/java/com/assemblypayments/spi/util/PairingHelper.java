@@ -47,7 +47,7 @@ public final class PairingHelper {
 
     /**
      * Turns an incoming "A" value from the PIN pad into the outgoing "B" value
-     * and the secret value using DiffieHelmman helper.
+     * and the secret value using DiffieHellman helper.
      *
      * @param theirPublicKey The incoming A value.
      * @return Your B value and the secret.
@@ -77,8 +77,8 @@ public final class PairingHelper {
      * @return A value as a {@link BigInteger}.
      */
     public static BigInteger spiAHexStringToBigInteger(String hexStringA) {
-        // We add "00" to bust signed little-endian that BigInterger expects.
-        // Because we received an assumed unsiged hex-number string.
+        // We add "00" to bust signed little-endian that BigInteger expects.
+        // Because we received an assumed unsigned hex-number string.
         return new BigInteger("00" + hexStringA.toLowerCase(), 16);
     }
 

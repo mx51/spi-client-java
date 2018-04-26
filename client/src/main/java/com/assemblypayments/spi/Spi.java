@@ -29,8 +29,8 @@ public class Spi {
     private MessageStamp spiMessageStamp;
 
     private Connection conn;
-    private long pongTimeout = TimeUnit.SECONDS.toMillis(5);
-    private long pingFrequency = TimeUnit.SECONDS.toMillis(18);
+    private final long pongTimeout = TimeUnit.SECONDS.toMillis(5);
+    private final long pingFrequency = TimeUnit.SECONDS.toMillis(18);
 
     private SpiStatus currentStatus;
     private SpiFlow currentFlow;
@@ -49,10 +49,10 @@ public class Spi {
     private Thread transactionMonitoringThread;
 
     private final Object txLock = new Object();
-    private long txMonitorCheckFrequency = TimeUnit.SECONDS.toMillis(1);
-    private long checkOnTxFrequency = TimeUnit.SECONDS.toMillis(20);
-    private long maxWaitForCancelTx = TimeUnit.SECONDS.toMillis(10);
-    private long missedPongsToDisconnect = 2;
+    private final long txMonitorCheckFrequency = TimeUnit.SECONDS.toMillis(1);
+    private final long checkOnTxFrequency = TimeUnit.SECONDS.toMillis(20);
+    private final long maxWaitForCancelTx = TimeUnit.SECONDS.toMillis(10);
+    private final long missedPongsToDisconnect = 2;
 
     private SpiPayAtTable spiPat;
 

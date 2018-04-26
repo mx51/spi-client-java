@@ -57,7 +57,7 @@ public class BillStatusResponse {
 
     /**
      * @return This is the table ID that this bill was for. The waiter will enter it on the EFTPOS at the
-     * start of the PayAtTable flow and the Eftpos will retrieve the bill using the table ID.
+     * start of the PayAtTable flow and the EFTPOS will retrieve the bill using the table ID.
      */
     public String getTableId() {
         return tableId;
@@ -86,14 +86,14 @@ public class BillStatusResponse {
     }
 
     /**
-     * @return The currently outsanding amount on this bill, in cents.
+     * @return The currently outstanding amount on this bill, in cents.
      */
     public int getOutstandingAmount() {
         return outstandingAmount;
     }
 
     /**
-     * @param outstandingAmount The currently outsanding amount on this bill, in cents.
+     * @param outstandingAmount The currently outstanding amount on this bill, in cents.
      */
     public void setOutstandingAmount(int outstandingAmount) {
         this.outstandingAmount = outstandingAmount;

@@ -8,8 +8,7 @@ import java.util.Map;
 
 public class MotoPurchaseRequest extends AbstractChargeRequest {
 
-    private String posRefId;
-    private int purchaseAmount;
+    private final int purchaseAmount;
 
     public MotoPurchaseRequest(int purchaseAmount, String posRefId) {
         super(posRefId);

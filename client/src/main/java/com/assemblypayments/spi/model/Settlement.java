@@ -13,11 +13,11 @@ public class Settlement extends AbstractTransactionResponse {
         super(m);
     }
 
-    public int getSettleByAquirerCount() {
+    public int getSettleByAcquirerCount() {
         return m.getDataIntValue("accumulated_settle_by_acquirer_count");
     }
 
-    public int getSettleByAquirerValue() {
+    public int getSettleByAcquirerValue() {
         return m.getDataIntValue("accumulated_settle_by_acquirer_value");
     }
 
@@ -57,10 +57,6 @@ public class Settlement extends AbstractTransactionResponse {
         } catch (ParseException e) {
             throw new RuntimeException("Cannot parse TriggeredTime", e);
         }
-    }
-
-    public String getResponseText() {
-        return super.getResponseText();
     }
 
     /**
