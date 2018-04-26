@@ -10,12 +10,13 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.websocket.DeploymentException;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
+import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
 /**
@@ -26,6 +27,8 @@ public class Spi {
     //region Private state
 
     private static final Logger LOG = LogManager.getLogger("spi");
+
+    static final String PROTOCOL_VERSION = "2.1.0";
 
     private String posId;
     private String eftposAddress;
@@ -169,25 +172,36 @@ public class Spi {
         return true;
     }
 
+    /**
+     * Retrieves package version of the SPI client library.
+     *
+     * @return Full version (e.g. '2.0.1') or, when running locally, protocol version (e.g. '2.0.0-PROTOCOL').
+     */
     @NotNull
     public static String getVersion() {
-        final Class<?> cl = Spi.class;
+        String bundleVersion = null;
 
-        final InputStream manifestIs = cl.getClassLoader().getResourceAsStream("META-INF/MANIFEST.MF");
-        if (manifestIs != null) {
+        // Retrieve 'Bundle-Version' from the manifest
+        Class<?> cl = Spi.class;
+        String classPath = cl.getResource(cl.getSimpleName() + ".class").toString();
+        if (classPath.startsWith("jar:")) {
+            // Keep going only if within JAR
+            String libPath = classPath.substring(0, classPath.lastIndexOf("!"));
+            String filePath = libPath + "!/" + JarFile.MANIFEST_NAME;
             try {
-                final Manifest manifest = new Manifest(manifestIs);
-                final String pkg = cl.getPackage().getName().replaceAll("\\.", "/");
-
-                final Attributes attrs = manifest.getAttributes(pkg);
-                if (attrs != null) {
-                    return attrs.getValue("Bundle-Version");
-                }
-            } catch (IOException e) {
-                LOG.warn("Cannot retrieve version, possibly running interactively");
+                Manifest manifest = new Manifest(new URL(filePath).openStream());
+                Attributes attr = manifest.getMainAttributes();
+                bundleVersion = attr.getValue("Bundle-Version");
+            } catch (IOException ignored) {
+                LOG.warn("Unable to retrieve bundle version");
             }
         }
-        return "UNKNOWN"; // FIXME: Need to extract version from properties generated in Gradle
+
+        // Default to protocol version, if unavailable
+        if (bundleVersion == null) {
+            bundleVersion = PROTOCOL_VERSION + "-PROTOCOL";
+        }
+        return bundleVersion;
     }
 
     //endregion
