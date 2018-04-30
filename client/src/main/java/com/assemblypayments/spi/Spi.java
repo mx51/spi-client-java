@@ -835,7 +835,7 @@ public class Spi {
 
     /**
      * GltMatch attempts to conclude whether a gltResponse matches an expected transaction and returns the outcome.
-     * If Success/Failed is returned, it means that the gtlResponse did match, and that transaction was successful/failed.
+     * If Success/Failed is returned, it means that the gltResponse did match, and that transaction was successful/failed.
      * If Unknown is returned, it means that the gltResponse does not match the expected transaction.
      *
      * @param gltResponse The GetLastTransactionResponse message to check.
@@ -856,9 +856,9 @@ public class Spi {
      * Attempts to conclude whether a gltResponse matches an expected transaction and returns the outcome.
      * <p>
      * If {@link Message.SuccessState#SUCCESS}/{@link Message.SuccessState#FAILED} is returned, it means that
-     * the GTL response did match, and that transaction was successful/failed.
+     * the GLT response did match, and that transaction was successful/failed.
      * <p>
-     * If {@link Message.SuccessState#UNKNOWN} is returned, it means that the gtlResponse does not match the
+     * If {@link Message.SuccessState#UNKNOWN} is returned, it means that the gltResponse does not match the
      * expected transaction.
      *
      * @param gltResponse    The {@link GetLastTransactionResponse} message to check.
@@ -1126,17 +1126,17 @@ public class Spi {
             // Let's attempt recovery. This is step 4 of transaction processing handling
             LOG.info("Got last transaction..");
             txState.gotGltResponse();
-            GetLastTransactionResponse gtlResponse = new GetLastTransactionResponse(m);
-            if (!gtlResponse.wasRetrievedSuccessfully()) {
-                if (gtlResponse.isStillInProgress(txState.getPosRefId())) {
+            GetLastTransactionResponse gltResponse = new GetLastTransactionResponse(m);
+            if (!gltResponse.wasRetrievedSuccessfully()) {
+                if (gltResponse.isStillInProgress(txState.getPosRefId())) {
                     // TH-4E - Operation In Progress
-                    if (gtlResponse.isWaitingForSignatureResponse() && !txState.isAwaitingSignatureCheck()) {
+                    if (gltResponse.isWaitingForSignatureResponse() && !txState.isAwaitingSignatureCheck()) {
                         LOG.info("EFTPOS is waiting for us to send it signature accept/decline, but we were not aware of this. " +
                                 "The user can only really decline at this stage as there is no receipt to print for signing.");
                         getCurrentTxFlowState().signatureRequired(
                                 new SignatureRequired(txState.getPosRefId(), m.getId(), "MISSING RECEIPT\n DECLINE AND TRY AGAIN."),
                                 "Recovered in Signature Required but we don't have receipt. You may Decline then Retry.");
-                    } else if (gtlResponse.isWaitingForAuthCode() && !txState.isAwaitingPhoneForAuth()) {
+                    } else if (gltResponse.isWaitingForAuthCode() && !txState.isAwaitingPhoneForAuth()) {
                         LOG.info("EFTPOS is waiting for us to send it auth code, but we were not aware of this. " +
                                 "We can only cancel the transaction at this stage as we don't have enough information to recover from this.");
                         getCurrentTxFlowState().phoneForAuthRequired(
@@ -1149,25 +1149,25 @@ public class Spi {
                     }
                 } else {
                     // TH-4X - Unexpected response when recovering
-                    LOG.info("Unexpected Response in get last transaction during - received posRefId:" + gtlResponse.getPosRefId() + " error:" + m.getError());
+                    LOG.info("Unexpected Response in get last transaction during - received posRefId:" + gltResponse.getPosRefId() + " error:" + m.getError());
                     txState.unknownCompleted("Unexpected error when recovering transaction status. Check EFTPOS. ");
                 }
             } else {
                 if (txState.getType() == TransactionType.GET_LAST_TRANSACTION) {
                     // THIS WAS A PLAIN GET LAST TRANSACTION REQUEST, NOT FOR RECOVERY PURPOSES.
                     LOG.info("Retrieved last transaction as asked directly by the user.");
-                    gtlResponse.copyMerchantReceiptToCustomerReceipt();
+                    gltResponse.copyMerchantReceiptToCustomerReceipt();
                     txState.completed(m.getSuccessState(), m, "Last transaction retrieved");
                 } else {
                     // TH-4A - Let's try to match the received last transaction against the current transaction
-                    Message.SuccessState successState = gltMatch(gtlResponse, txState.getPosRefId());
+                    Message.SuccessState successState = gltMatch(gltResponse, txState.getPosRefId());
                     if (successState == Message.SuccessState.UNKNOWN) {
                         // TH-4N: Didn't Match our transaction. Consider unknown state.
                         LOG.info("Did not match transaction.");
                         txState.unknownCompleted("Failed to recover transaction status. Check EFTPOS. ");
                     } else {
                         // TH-4Y: We Matched, transaction finished, let's update ourselves
-                        gtlResponse.copyMerchantReceiptToCustomerReceipt();
+                        gltResponse.copyMerchantReceiptToCustomerReceipt();
                         txState.completed(successState, m, "Transaction ended.");
                     }
                 }
