@@ -1,32 +1,90 @@
 package com.assemblypayments.spi.model;
 
-public class Settlement {
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
-    private final boolean success;
-    private final String requestId;
-
-    private final Message m;
+public class Settlement extends AbstractTransactionResponse {
 
     public Settlement(Message m) {
-        this.requestId = m.getId();
-        this.m = m;
-        this.success = m.getSuccessState() == Message.SuccessState.SUCCESS;
+        super(m);
     }
 
-    public boolean getSuccess() {
-        return success;
+    public int getSettleByAcquirerCount() {
+        return m.getDataIntValue("accumulated_settle_by_acquirer_count");
     }
 
-    public String getRequestId() {
-        return requestId;
+    public int getSettleByAcquirerValue() {
+        return m.getDataIntValue("accumulated_settle_by_acquirer_value");
     }
 
-    public String getResponseText() {
-        return m.getDataStringValue("host_response_text");
+    public int getTotalCount() {
+        return m.getDataIntValue("accumulated_total_count");
     }
 
+    public int getTotalValue() {
+        return m.getDataIntValue("accumulated_total_value");
+    }
+
+    public long getPeriodStartTime() {
+        final String timeStr = m.getDataStringValue("settlement_period_start_time"); // "05:00"
+        final String dateStr = m.getDataStringValue("settlement_period_start_date"); // "05Oct17"
+        try {
+            return new SimpleDateFormat("HH:mmddMMMyy", Locale.US).parse(timeStr + dateStr).getTime();
+        } catch (ParseException e) {
+            throw new RuntimeException("Cannot parse PeriodStartTime", e);
+        }
+    }
+
+    public long getPeriodEndTime() {
+        final String timeStr = m.getDataStringValue("settlement_period_end_time"); // "05:00"
+        final String dateStr = m.getDataStringValue("settlement_period_end_date"); // "05Oct17"
+        try {
+            return new SimpleDateFormat("HH:mmddMMMyy", Locale.US).parse(timeStr + dateStr).getTime();
+        } catch (ParseException e) {
+            throw new RuntimeException("Cannot parse PeriodEndTime", e);
+        }
+    }
+
+    public long getTriggeredTime() {
+        final String timeStr = m.getDataStringValue("settlement_triggered_time"); // "05:00:45"
+        final String dateStr = m.getDataStringValue("settlement_triggered_date"); // "05Oct17"
+        try {
+            return new SimpleDateFormat("HH:mm:ssddMMMyy", Locale.US).parse(timeStr + dateStr).getTime();
+        } catch (ParseException e) {
+            throw new RuntimeException("Cannot parse TriggeredTime", e);
+        }
+    }
+
+    /**
+     * @deprecated Use {@link #getMerchantReceipt()} instead.
+     */
+    @Deprecated
     public String getReceipt() {
-        return m.getDataStringValue("merchant_receipt");
+        return getMerchantReceipt();
+    }
+
+    public String getTransactionRange() {
+        return m.getDataStringValue("transaction_range");
+    }
+
+    public String getTerminalId() {
+        return m.getDataStringValue("terminal_id");
+    }
+
+    public Iterable<SchemeSettlementEntry> getSchemeSettlementEntries() {
+        final List<Object> schemes = m.getDataListValue("schemes");
+        final List<SchemeSettlementEntry> entries = new ArrayList<SchemeSettlementEntry>();
+        for (Object scheme : schemes) {
+            if (scheme instanceof Map) {
+                //noinspection unchecked
+                entries.add(new SchemeSettlementEntry((Map<String, Object>) scheme));
+            }
+        }
+        return entries;
     }
 
 }

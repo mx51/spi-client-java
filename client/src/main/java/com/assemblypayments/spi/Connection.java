@@ -91,7 +91,7 @@ class Connection {
                         }
                     },
                     ClientEndpointConfig.Builder.create()
-                            .preferredSubprotocols(Collections.singletonList("spi.2.0.0"))
+                            .preferredSubprotocols(Collections.singletonList("spi." + Spi.PROTOCOL_VERSION))
                             .build(),
                     URI.create(address));
 

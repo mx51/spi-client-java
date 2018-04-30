@@ -56,6 +56,7 @@ public class Pos {
         // And Now we just accept user input and display to the user what is happening.
         SystemHelper.clearConsole();
         System.out.println("# Welcome! My name is " + posId + ".");
+        System.out.println("# Version: " + Spi.getVersion());
 
         printStatusAndActions();
         acceptUserInput();
@@ -152,7 +153,7 @@ public class Pos {
                             System.out.println("# Response: " + settleResponse.getResponseText());
                             System.out.println("# Error: " + txFlowState.getResponse().getError());
                             System.out.println("# Merchant Receipt:");
-                            System.out.println(settleResponse.getReceipt().trim());
+                            System.out.println(settleResponse.getMerchantReceipt().trim());
                             //} else {
                             // We did not even get a response, like in the case of a time-out.
                         }

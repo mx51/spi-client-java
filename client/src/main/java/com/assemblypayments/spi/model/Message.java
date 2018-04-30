@@ -5,13 +5,12 @@ import com.assemblypayments.spi.util.Events;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
+import org.jetbrains.annotations.NotNull;
 
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Message represents the contents of a message.
@@ -54,6 +53,12 @@ public class Message {
             final Message message = env.getMessage();
             message.setDecryptedJson(msgJson);
             return message;
+        }
+
+        if (secrets == null) {
+            // This may happen if we somehow received an encrypted message from eftpos but we're not configured with secrets.
+            // For example, if we cancel the pairing process a little late in the game and we get an encrypted key_check message after we've dropped the keys.
+            return new Message("UNKNOWN", "NOSECRETS", null, false);
         }
 
         final String sig = Crypto.hmacSignature(secrets.getHmacKeyBytes(), env.getEnc());
@@ -128,6 +133,7 @@ public class Message {
         this.decryptedJson = decryptedJson;
     }
 
+    @NotNull
     public SuccessState getSuccessState() {
         if (data == null) return SuccessState.UNKNOWN;
         final Object success = data.get("success");
@@ -141,24 +147,56 @@ public class Message {
         return null;
     }
 
+    public String getErrorDetail() {
+        return getDataStringValue("error_detail");
+    }
+
+    @NotNull
     public String getDataStringValue(String attribute) {
         final Object v = data.get(attribute);
         if (v instanceof String) return (String) v;
         return "";
     }
 
-    public Integer getDataIntValue(String attribute) {
+    public int getDataIntValue(String attribute) {
         final Object v = data.get(attribute);
         if (v instanceof Integer) return (Integer) v;
         if (v instanceof Double) return ((Double) v).intValue();
-        if (v instanceof String) return new Integer((String) v);
+        if (v instanceof String) return Integer.parseInt((String) v);
         return 0;
+    }
+
+    public boolean getDataBooleanValue(String attribute, boolean defaultIfNotFound) {
+        final Object v = data.get(attribute);
+        if (v instanceof Boolean) return ((Boolean) v);
+        if (v instanceof String) return Boolean.parseBoolean((String) v);
+        return defaultIfNotFound;
+    }
+
+    @NotNull
+    public Map<String, Object> getDataMapValue(String attribute) {
+        final Object v = data.get(attribute);
+        if (v instanceof Map) {
+            //noinspection unchecked
+            return (Map<String, Object>) v;
+        }
+        return Collections.emptyMap();
+    }
+
+    @NotNull
+    public List<Object> getDataListValue(String attribute) {
+        final Object v = data.get(attribute);
+        if (v instanceof List) {
+            //noinspection unchecked
+            return (List<Object>) v;
+        }
+        return Collections.emptyList();
     }
 
     public long getServerTimeDelta() {
         final long now = System.currentTimeMillis();
         try {
-            final long msgTime = new SimpleDateFormat(DATE_TIME_FORMAT).parse(dateTimeStamp).getTime();
+            final long msgTime = new SimpleDateFormat(DATE_TIME_FORMAT, Locale.US).parse(dateTimeStamp).getTime();
             return msgTime - now;
         } catch (ParseException e) {
             throw new RuntimeException(e);
@@ -168,7 +206,7 @@ public class Message {
     public String toJson(MessageStamp stamp) {
         final long now = System.currentTimeMillis();
         final long adjustedTime = now + stamp.getServerTimeDelta();
-        dateTimeStamp = new SimpleDateFormat(DATE_TIME_FORMAT).format(new Date(adjustedTime));
+        dateTimeStamp = new SimpleDateFormat(DATE_TIME_FORMAT, Locale.US).format(new Date(adjustedTime));
 
         if (!needsEncryption) {
             // Unencrypted Messages need PosID inside the message

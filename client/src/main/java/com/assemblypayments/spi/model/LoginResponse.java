@@ -2,6 +2,7 @@ package com.assemblypayments.spi.model;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 public class LoginResponse {
@@ -14,8 +15,16 @@ public class LoginResponse {
         this.expires = (String) m.getData().get("expires_datetime");
     }
 
-    public Boolean getSuccess() {
+    public boolean isSuccess() {
         return success;
+    }
+
+    /**
+     * @deprecated Use {@link #isSuccess()} instead.
+     */
+    @Deprecated
+    public Boolean getSuccess() {
+        return isSuccess();
     }
 
     public String getExpires() {
@@ -25,7 +34,7 @@ public class LoginResponse {
     public boolean expiringSoon(long serverTimeDelta) throws ParseException {
         long now = System.currentTimeMillis();
         long nowServerTime = now + serverTimeDelta;
-        long expiresAt = new SimpleDateFormat(Message.DATE_TIME_FORMAT).parse(expires).getTime();
+        long expiresAt = new SimpleDateFormat(Message.DATE_TIME_FORMAT, Locale.US).parse(expires).getTime();
 
         return expiresAt < (nowServerTime + TimeUnit.MINUTES.toMillis(10));
     }

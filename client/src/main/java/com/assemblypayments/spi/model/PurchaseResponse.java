@@ -1,50 +1,53 @@
 package com.assemblypayments.spi.model;
 
-public class PurchaseResponse {
+import org.jetbrains.annotations.NotNull;
 
-    private final boolean success;
-    private final String requestId;
-    private final String schemeName;
+import java.util.HashMap;
+import java.util.Map;
 
-    private final Message m;
+public class PurchaseResponse extends AbstractChargeResponse {
 
     public PurchaseResponse(Message m) {
-        this.requestId = m.getId();
-        this.m = m;
-        this.schemeName = m.getDataStringValue("scheme_name");
-        this.success = m.getSuccessState() == Message.SuccessState.SUCCESS;
+        super(m);
     }
 
-    public boolean getSuccess() {
-        return success;
+    public int getPurchaseAmount() {
+        return m.getDataIntValue("purchase_amount");
     }
 
-    public String getRequestId() {
-        return requestId;
+    public int getTipAmount() {
+        return m.getDataIntValue("tip_amount");
     }
 
-    public String getSchemeName() {
-        return schemeName;
+    public int getCashoutAmount() {
+        return m.getDataIntValue("cash_amount");
     }
 
-    public String getRRN() {
-        return m.getDataStringValue("rrn");
+    public int getBankNonCashAmount() {
+        return m.getDataIntValue("bank_noncash_amount");
     }
 
-    public String getCustomerReceipt() {
-        return m.getDataStringValue("customer_receipt");
+    public int getBankCashAmount() {
+        return m.getDataIntValue("bank_cash_amount");
     }
 
-    public String getMerchantReceipt() {
-        return m.getDataStringValue("merchant_receipt");
-    }
-
-    public String getResponseText() {
-        return m.getDataStringValue("host_response_text");
-    }
-
-    public String getResponseValue(String attribute) {
-        return m.getDataStringValue(attribute);
+    @NotNull
+    public Map<String, Object> toPaymentSummary() {
+        final Map<String, Object> data = new HashMap<String, Object>();
+        data.put("account_type", getAccountType());
+        data.put("auth_code", getAuthCode());
+        data.put("bank_date", getBankDate());
+        data.put("bank_time", getBankTime());
+        data.put("host_response_code", getResponseCode());
+        data.put("host_response_text", getResponseText());
+        data.put("masked_pan", getMaskedPan());
+        data.put("purchase_amount", getPurchaseAmount());
+        data.put("rrn", getRRN());
+        data.put("scheme_name", getSchemeName());
+        data.put("terminal_id", getTerminalId());
+        data.put("terminal_ref_id", getTerminalReferenceId());
+        data.put("tip_amount", getTipAmount());
+        return data;
     }
 
 }
