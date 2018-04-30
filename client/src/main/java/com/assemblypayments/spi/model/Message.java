@@ -55,6 +55,12 @@ public class Message {
             return message;
         }
 
+        if (secrets == null) {
+            // This may happen if we somehow received an encrypted message from eftpos but we're not configured with secrets.
+            // For example, if we cancel the pairing process a little late in the game and we get an encrypted key_check message after we've dropped the keys.
+            return new Message("UNKNOWN", "NOSECRETS", null, false);
+        }
+
         final String sig = Crypto.hmacSignature(secrets.getHmacKeyBytes(), env.getEnc());
         if (!sig.equals(env.getHmac())) {
             return new Message("_", Events.INVALID_HMAC_SIGNATURE, null, false);
@@ -139,6 +145,10 @@ public class Message {
         final Object e = data.get("error_reason");
         if (e instanceof String) return (String) e;
         return null;
+    }
+
+    public String getErrorDetail() {
+        return getDataStringValue("error_detail");
     }
 
     @NotNull

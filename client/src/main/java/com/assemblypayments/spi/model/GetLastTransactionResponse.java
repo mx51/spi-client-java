@@ -18,7 +18,7 @@ public class GetLastTransactionResponse {
     }
 
     public boolean wasOperationInProgressError() {
-        return "OPERATION_IN_PROGRESS".equals(m.getError());
+        return m.getError().startsWith("OPERATION_IN_PROGRESS");
     }
 
     public boolean isWaitingForSignatureResponse() {

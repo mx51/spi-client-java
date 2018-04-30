@@ -1116,45 +1116,59 @@ public class Spi {
      */
     private void handleGetLastTransactionResponse(@NotNull Message m) {
         synchronized (txLock) {
-            final TransactionFlowState txState = getCurrentTxFlowState();
+            TransactionFlowState txState = getCurrentTxFlowState();
             if (getCurrentFlow() != SpiFlow.TRANSACTION || txState.isFinished()) {
                 // We were not in the middle of a transaction, who cares?
                 return;
             }
 
             // TH-4 We were in the middle of a transaction.
-            // Let's attempt recovery. This is step 4 of Transaction Processing Handling
-            LOG.info("Got last transaction.. Attempting recovery.");
+            // Let's attempt recovery. This is step 4 of transaction processing handling
+            LOG.info("Got last transaction..");
             txState.gotGltResponse();
-            final GetLastTransactionResponse gltResponse = new GetLastTransactionResponse(m);
-            if (!gltResponse.wasRetrievedSuccessfully()) {
-                if (gltResponse.wasOperationInProgressError()) {
+            GetLastTransactionResponse gtlResponse = new GetLastTransactionResponse(m);
+            if (!gtlResponse.wasRetrievedSuccessfully()) {
+                if (gtlResponse.isStillInProgress(txState.getPosRefId())) {
                     // TH-4E - Operation In Progress
-                    LOG.info("Operation still in progress... Stay waiting.");
-                    // No need to publish txFlowStateChanged. Can return;
-                    return;
+                    if (gtlResponse.isWaitingForSignatureResponse() && !txState.isAwaitingSignatureCheck()) {
+                        LOG.info("EFTPOS is waiting for us to send it signature accept/decline, but we were not aware of this. " +
+                                "The user can only really decline at this stage as there is no receipt to print for signing.");
+                        getCurrentTxFlowState().signatureRequired(
+                                new SignatureRequired(txState.getPosRefId(), m.getId(), "MISSING RECEIPT\n DECLINE AND TRY AGAIN."),
+                                "Recovered in Signature Required but we don't have receipt. You may Decline then Retry.");
+                    } else if (gtlResponse.isWaitingForAuthCode() && !txState.isAwaitingPhoneForAuth()) {
+                        LOG.info("EFTPOS is waiting for us to send it auth code, but we were not aware of this. " +
+                                "We can only cancel the transaction at this stage as we don't have enough information to recover from this.");
+                        getCurrentTxFlowState().phoneForAuthRequired(
+                                new PhoneForAuthRequired(txState.getPosRefId(), m.getId(), "UNKNOWN", "UNKNOWN"),
+                                "Recovered mid phone-for-auth but don't have details. You may cancel then retry.");
+                    } else {
+                        LOG.info("Operation still in progress... keep waiting.");
+                        // No need to publish txFlowStateChanged. Can return;
+                        return;
+                    }
                 } else {
-                    // TH-4X - Unexpected Error when recovering
-                    LOG.info("Unexpected error in get last transaction response during transaction recovery: " + m.getError());
+                    // TH-4X - Unexpected response when recovering
+                    LOG.info("Unexpected Response in get last transaction during - received posRefId:" + gtlResponse.getPosRefId() + " error:" + m.getError());
                     txState.unknownCompleted("Unexpected error when recovering transaction status. Check EFTPOS. ");
                 }
             } else {
                 if (txState.getType() == TransactionType.GET_LAST_TRANSACTION) {
                     // THIS WAS A PLAIN GET LAST TRANSACTION REQUEST, NOT FOR RECOVERY PURPOSES.
                     LOG.info("Retrieved last transaction as asked directly by the user.");
-                    gltResponse.copyMerchantReceiptToCustomerReceipt();
+                    gtlResponse.copyMerchantReceiptToCustomerReceipt();
                     txState.completed(m.getSuccessState(), m, "Last transaction retrieved");
                 } else {
                     // TH-4A - Let's try to match the received last transaction against the current transaction
-                    final Message.SuccessState successState = gltMatch(gltResponse, txState.getPosRefId());
+                    Message.SuccessState successState = gltMatch(gtlResponse, txState.getPosRefId());
                     if (successState == Message.SuccessState.UNKNOWN) {
-                        // TH-4N: Didn't Match our transaction. Consider Unknown State.
+                        // TH-4N: Didn't Match our transaction. Consider unknown state.
                         LOG.info("Did not match transaction.");
-                        txState.unknownCompleted("Failed to recover transaction Status. Check EFTPOS. ");
+                        txState.unknownCompleted("Failed to recover transaction status. Check EFTPOS. ");
                     } else {
                         // TH-4Y: We Matched, transaction finished, let's update ourselves
-                        gltResponse.copyMerchantReceiptToCustomerReceipt();
-                        txState.completed(m.getSuccessState(), m, "Transaction ended.");
+                        gtlResponse.copyMerchantReceiptToCustomerReceipt();
+                        txState.completed(successState, m, "Transaction ended.");
                     }
                 }
             }
@@ -1280,10 +1294,14 @@ public class Spi {
                     reconnectTimer.schedule(new TimerTask() {
                         @Override
                         public void run() {
+                            if (conn == null) return; // This means the instance has been disposed. Aborting.
                             if (getCurrentStatus() != SpiStatus.UNPAIRED) {
                                 // This is non-blocking
                                 try {
-                                    conn.connect();
+                                    Connection conn = Spi.this.conn;
+                                    if (conn != null) {
+                                        conn.connect();
+                                    }
                                 } catch (DeploymentException e) {
                                     LOG.error("Failed to connect", e);
                                 }
