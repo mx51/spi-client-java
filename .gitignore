@@ -4,6 +4,11 @@
 # Generated files
 out/
 output.log
+.project
+.settings/
+.classpath
+bin/
+
 
 # Gradle files
 .gradle/
