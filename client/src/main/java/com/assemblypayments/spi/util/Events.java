@@ -53,7 +53,7 @@ public final class Events {
 
     public static final String PAY_AT_TABLE_GET_TABLE_CONFIG = "get_table_config"; // Incoming. When EFTPOS wants to ask us for P@T configuration.
     public static final String PAY_AT_TABLE_SET_TABLE_CONFIG = "set_table_config"; // Outgoing. When we want to instruct eftpos with the P@T configuration.
-    public static final String PAY_AT_TABLE_GET_BILL_DETAILS = "get_bill_details"; // Incoming. When EFTPOS wants to aretrieve the bill for a table.
+    public static final String PAY_AT_TABLE_GET_BILL_DETAILS = "get_bill_details"; // Incoming. When EFTPOS wants to retrieve the bill for a table.
     public static final String PAY_AT_TABLE_BILL_DETAILS = "bill_details";        // Outgoing. We reply with this when eftpos requests to us get_bill_details.
     public static final String PAY_AT_TABLE_BILL_PAYMENT = "bill_payment";        // Incoming. When the EFTPOS advices.
 

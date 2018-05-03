@@ -111,7 +111,7 @@ public class PayAtTableConfig {
         data.put("table_id_label", labelTableId);
         data.put("operator_id_list", allowedOperatorIds);
 
-        return new Message(messageId, Events.PAY_AT_TABLE_GET_TABLE_CONFIG, data, true);
+        return new Message(messageId, Events.PAY_AT_TABLE_SET_TABLE_CONFIG, data, true);
     }
 
     public static Message featureDisableMessage(String messageId) {

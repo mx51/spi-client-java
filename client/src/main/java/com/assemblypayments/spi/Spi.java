@@ -381,7 +381,8 @@ public class Spi {
             return false;
         }
 
-        if (StringUtils.isWhitespace(posId) || StringUtils.isWhitespace(eftposAddress)) {
+        if (posId == null || StringUtils.isWhitespace(posId) ||
+                eftposAddress == null || StringUtils.isWhitespace(eftposAddress)) {
             LOG.warn("Tried to pair but missing posId and/or eftposAddress");
             return false;
         }
@@ -1070,6 +1071,8 @@ public class Spi {
 
     /**
      * Verifies transaction response (TH-1A, TH-2A).
+     *
+     * @return True if transaction response is unexpected and should be ignored, false if all is well.
      */
     private boolean isTxResponseUnexpected(@NotNull Message m, @NotNull String typeName, boolean checkPosRefId) {
         final TransactionFlowState currentState = getCurrentTxFlowState();
@@ -1087,9 +1090,9 @@ public class Spi {
         if (getCurrentFlow() != SpiFlow.TRANSACTION || currentState.isFinished() || !posRefIdMatched) {
             String trace = checkPosRefId ? "Incoming Pos Ref ID: " + incomingPosRefId : m.getDecryptedJson();
             LOG.info("Received " + typeName + " response but I was not waiting for one. " + trace);
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     /**

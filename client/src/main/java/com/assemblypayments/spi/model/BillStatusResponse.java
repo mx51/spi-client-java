@@ -119,7 +119,7 @@ public class BillStatusResponse {
 
     public List<PaymentHistoryEntry> getBillPaymentHistory() {
         final String billData = this.billData;
-        if (StringUtils.isWhitespace(billData)) return new ArrayList<PaymentHistoryEntry>();
+        if (billData == null || StringUtils.isWhitespace(billData)) return new ArrayList<PaymentHistoryEntry>();
 
         final byte[] bdArray = Base64.decodeBase64(billData);
         final String bdStr = new String(bdArray, Charsets.UTF8_CHARSET);
@@ -138,12 +138,12 @@ public class BillStatusResponse {
         data.put("success", result == BillRetrievalResult.SUCCESS);
 
         final String billId = this.billId;
-        if (!StringUtils.isWhitespace(billId)) {
+        if (!(billId == null || StringUtils.isWhitespace(billId))) {
             data.put("bill_id", billId);
         }
 
         final String tableId = this.tableId;
-        if (!StringUtils.isWhitespace(tableId)) {
+        if (!(tableId == null || StringUtils.isWhitespace(tableId))) {
             data.put("table_id", tableId);
         }
 
