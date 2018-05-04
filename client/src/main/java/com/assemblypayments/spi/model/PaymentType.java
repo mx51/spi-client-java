@@ -23,8 +23,11 @@ public enum PaymentType {
     }
 
     public static PaymentType parse(String value) {
-        for (PaymentType t : values()) {
-            if (t.getName().equals(value)) return t;
+        if (value != null) {
+            String key = value.toLowerCase();
+            for (PaymentType t : values()) {
+                if (t.getName().toLowerCase().equals(key)) return t;
+            }
         }
         return null;
     }

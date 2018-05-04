@@ -1540,7 +1540,7 @@ public class Spi {
     }
 
     private void onWsErrorReceived(@Nullable Throwable error) {
-        LOG.warn("Received WS error: " + error);
+        LOG.error("Received WS error: " + error);
     }
 
     boolean send(Message message) {
