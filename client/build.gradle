@@ -11,7 +11,7 @@ sourceCompatibility = JavaVersion.VERSION_1_6
 ext {
     publishVendor = 'Assembly Payments'
     publishName = 'SPI Client Java'
-    publishDescription = 'Java Client Library for Assembly Payments\' In-Store Integration.'
+    publishDescription = 'Java client library for Assembly Payments\' in-Store integration.'
     publishLicense = 'Apache-2.0'
     publishUrl = 'https://github.com/AssemblyPayments/spi-client-java'
     publishVcs = 'https://github.com/AssemblyPayments/spi-client-java.git'
