@@ -7,7 +7,6 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class SpiPayAtTable {
@@ -82,12 +81,14 @@ public class SpiPayAtTable {
         }
 
         List<PaymentHistoryEntry> existingPaymentHistory = existingBillStatus.getBillPaymentHistory();
+
         PaymentHistoryEntry foundExistingEntry = null;
         String referenceId = billPayment.getPurchaseResponse().getTerminalReferenceId();
         if (referenceId != null) {
             for (PaymentHistoryEntry phe : existingPaymentHistory) {
                 if (referenceId.equals(phe.getTerminalRefId())) {
                     foundExistingEntry = phe;
+                    break;
                 }
             }
         }
@@ -104,11 +105,12 @@ public class SpiPayAtTable {
         assert billPaymentReceivedDelegate != null;
 
         // Let's add the new entry to the history
-        PaymentHistoryEntry updatedHistoryEntry = new PaymentHistoryEntry(
+        List<PaymentHistoryEntry> updatedHistoryEntries = new ArrayList<PaymentHistoryEntry>(existingPaymentHistory);
+        updatedHistoryEntries.add(new PaymentHistoryEntry(
                 billPayment.getPaymentType().toString().toLowerCase(),
                 billPayment.getPurchaseResponse().toPaymentSummary()
-        );
-        String updatedBillData = BillStatusResponse.toBillData(Collections.singletonList(updatedHistoryEntry));
+        ));
+        String updatedBillData = BillStatusResponse.toBillData(updatedHistoryEntries);
 
         // Advise POS of new payment against this bill, and the updated BillData to Save.
         BillStatusResponse updatedBillStatus = billPaymentReceivedDelegate.getBillReceived(billPayment, updatedBillData);
