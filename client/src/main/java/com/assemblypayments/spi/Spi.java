@@ -481,26 +481,7 @@ public class Spi {
      */
     @NotNull
     public InitiateTxResult initiatePurchaseTx(String posRefId, int purchaseAmount) {
-        if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
-
-        synchronized (txLock) {
-            if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
-
-            final PurchaseRequest request = PurchaseHelper.createPurchaseRequest(purchaseAmount, posRefId);
-            final Message message = request.toMessage();
-
-            setCurrentFlow(SpiFlow.TRANSACTION);
-            setCurrentTxFlowState(new TransactionFlowState(
-                    posRefId, TransactionType.PURCHASE, purchaseAmount, message,
-                    String.format("Waiting for EFTPOS connection to make payment request for %.2f", purchaseAmount / 100.0)));
-
-            if (send(message)) {
-                getCurrentTxFlowState().sent(String.format("Asked EFTPOS to accept payment for %.2f", purchaseAmount / 100.0));
-            }
-        }
-
-        txFlowStateChanged();
-        return new InitiateTxResult(true, "Purchase Initiated");
+        return initiatePurchaseTx(posRefId, purchaseAmount, 0, 0, false);
     }
 
     /**
@@ -936,7 +917,7 @@ public class Spi {
     }
 
     private void handleDropKeysAdvice(Message m) {
-        LOG.info("Eftpos was Unpaired. I shall unpair from my end as well.");
+        LOG.info("EFTPOS was unpaired. I shall unpair from my end as well.");
         doUnpair();
     }
 

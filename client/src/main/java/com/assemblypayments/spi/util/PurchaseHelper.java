@@ -9,11 +9,11 @@ public final class PurchaseHelper {
     }
 
     public static PurchaseRequest createPurchaseRequest(int purchaseAmount, String posRefId) {
-        return new PurchaseRequest(purchaseAmount, posRefId);
+        return createPurchaseRequest(purchaseAmount, posRefId, 0, 0, false);
     }
 
     public static PurchaseRequest createPurchaseRequest(int purchaseAmount, String posRefId, int tipAmount, int cashoutAmount, boolean promptForCashout) {
-        final PurchaseRequest request = createPurchaseRequest(purchaseAmount, posRefId);
+        final PurchaseRequest request = new PurchaseRequest(purchaseAmount, posRefId);
         request.setCashoutAmount(cashoutAmount);
         request.setTipAmount(tipAmount);
         request.setPromptForCashout(promptForCashout);
