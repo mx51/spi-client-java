@@ -540,6 +540,7 @@ public class Spi {
             if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
 
             final RefundRequest request = PurchaseHelper.createRefundRequest(refundAmount, posRefId);
+            request.setConfig(config);
             final Message message = request.toMessage();
 
             setCurrentFlow(SpiFlow.TRANSACTION);
