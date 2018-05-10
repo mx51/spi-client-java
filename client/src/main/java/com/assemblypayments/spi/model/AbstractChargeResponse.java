@@ -1,5 +1,7 @@
 package com.assemblypayments.spi.model;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -10,7 +12,7 @@ public abstract class AbstractChargeResponse extends AbstractTransactionResponse
     private final String schemeName;
     private final String posRefId;
 
-    protected AbstractChargeResponse(Message m) {
+    protected AbstractChargeResponse(@NotNull Message m) {
         super(m);
         this.schemeName = m.getDataStringValue("scheme_name");
         this.posRefId = m.getDataStringValue("pos_ref_id");

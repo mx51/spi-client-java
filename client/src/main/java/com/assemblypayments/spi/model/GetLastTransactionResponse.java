@@ -1,12 +1,15 @@
 package com.assemblypayments.spi.model;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.Validate;
+import org.jetbrains.annotations.NotNull;
 
 public class GetLastTransactionResponse {
 
     private final Message m;
 
-    public GetLastTransactionResponse(Message m) {
+    public GetLastTransactionResponse(@NotNull Message m) {
+        Validate.notNull(m, "Cannot construct response with a null message!");
         this.m = m;
     }
 

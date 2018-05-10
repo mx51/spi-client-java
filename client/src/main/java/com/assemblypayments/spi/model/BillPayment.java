@@ -1,5 +1,8 @@
 package com.assemblypayments.spi.model;
 
+import org.apache.commons.lang.Validate;
+import org.jetbrains.annotations.NotNull;
+
 public class BillPayment {
 
     private final String billId;
@@ -13,7 +16,9 @@ public class BillPayment {
 
     private final PurchaseResponse purchaseResponse;
 
-    public BillPayment(Message m) {
+    public BillPayment(@NotNull Message m) {
+        Validate.notNull(m, "Cannot construct bill payment with a null message!");
+
         billId = m.getDataStringValue("bill_id");
         tableId = m.getDataStringValue("table_id");
         operatorId = m.getDataStringValue("operator_id");

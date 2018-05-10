@@ -711,7 +711,7 @@ public class Spi {
      * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} to get updates on the process.
      */
     @NotNull
-    public InitiateTxResult initiateSettleTx(String id) {
+    public InitiateTxResult initiateSettleTx(String posRefId) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         synchronized (txLock) {
@@ -720,7 +720,7 @@ public class Spi {
             final SettleRequest settleRequest = new SettleRequest(RequestIdHelper.id("settle"));
             setCurrentFlow(SpiFlow.TRANSACTION);
             setCurrentTxFlowState(new TransactionFlowState(
-                    id, TransactionType.SETTLE, 0, settleRequest.toMessage(),
+                    posRefId, TransactionType.SETTLE, 0, settleRequest.toMessage(),
                     "Waiting for EFTPOS connection to make a settle request"));
 
             if (send(settleRequest.toMessage())) {
@@ -1522,7 +1522,7 @@ public class Spi {
     }
 
     private void onWsErrorReceived(@Nullable Throwable error) {
-        LOG.error("Received WS error: " + error);
+        LOG.error("Received WS error", error);
     }
 
     boolean send(Message message) {

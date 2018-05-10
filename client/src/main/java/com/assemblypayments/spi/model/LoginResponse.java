@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+@Deprecated
 public class LoginResponse {
 
     private final Boolean success;

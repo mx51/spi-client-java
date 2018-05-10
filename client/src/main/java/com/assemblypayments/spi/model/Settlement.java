@@ -1,5 +1,7 @@
 package com.assemblypayments.spi.model;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -9,7 +11,7 @@ import java.util.Map;
 
 public class Settlement extends AbstractTransactionResponse {
 
-    public Settlement(Message m) {
+    public Settlement(@NotNull Message m) {
         super(m);
     }
 

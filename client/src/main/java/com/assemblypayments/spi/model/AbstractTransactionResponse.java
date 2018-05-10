@@ -1,10 +1,14 @@
 package com.assemblypayments.spi.model;
 
+import org.apache.commons.lang.Validate;
+import org.jetbrains.annotations.NotNull;
+
 public abstract class AbstractTransactionResponse {
 
     protected final Message m;
 
-    protected AbstractTransactionResponse(Message m) {
+    protected AbstractTransactionResponse(@NotNull Message m) {
+        Validate.notNull(m, "Cannot construct response with a null message!");
         this.m = m;
     }
 

@@ -1,8 +1,10 @@
 package com.assemblypayments.spi.model;
 
+import org.jetbrains.annotations.NotNull;
+
 public class RefundResponse extends AbstractChargeResponse {
 
-    public RefundResponse(Message m) {
+    public RefundResponse(@NotNull Message m) {
         super(m);
     }
 

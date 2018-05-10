@@ -1,8 +1,10 @@
 package com.assemblypayments.spi.model;
 
+import org.jetbrains.annotations.NotNull;
+
 public class CashoutOnlyResponse extends AbstractChargeResponse {
 
-    public CashoutOnlyResponse(Message m) {
+    public CashoutOnlyResponse(@NotNull Message m) {
         super(m);
     }
 

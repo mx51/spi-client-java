@@ -1,5 +1,8 @@
 package com.assemblypayments.spi.model;
 
+import org.apache.commons.lang.Validate;
+import org.jetbrains.annotations.NotNull;
+
 public class PhoneForAuthRequired {
 
     private final String requestId;
@@ -8,7 +11,8 @@ public class PhoneForAuthRequired {
     private final String phoneNumber;
     private final String merchantId;
 
-    public PhoneForAuthRequired(Message m) {
+    public PhoneForAuthRequired(@NotNull Message m) {
+        Validate.notNull(m, "Cannot construct phone for auth required with a null message!");
         this.requestId = m.getId();
         this.posRefId = m.getDataStringValue("pos_ref_id");
         this.phoneNumber = m.getDataStringValue("auth_centre_phone_number");

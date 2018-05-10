@@ -1,5 +1,8 @@
 package com.assemblypayments.spi.model;
 
+import org.apache.commons.lang.Validate;
+import org.jetbrains.annotations.NotNull;
+
 public class PreauthResponse {
 
     private final String posRefId;
@@ -9,7 +12,8 @@ public class PreauthResponse {
 
     private final Message m;
 
-    public PreauthResponse(Message m) {
+    public PreauthResponse(@NotNull Message m) {
+        Validate.notNull(m, "Cannot construct response with a null message!");
         this.m = m;
         preauthId = m.getDataStringValue("preauth_id");
         details = new PurchaseResponse(m);

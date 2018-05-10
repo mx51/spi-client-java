@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class PurchaseResponse extends AbstractChargeResponse {
 
-    public PurchaseResponse(Message m) {
+    public PurchaseResponse(@NotNull Message m) {
         super(m);
     }
 
