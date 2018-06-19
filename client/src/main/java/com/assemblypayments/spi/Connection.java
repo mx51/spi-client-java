@@ -113,15 +113,17 @@ class Connection {
         }
     }
 
-    public void disconnect() {
-        if (this.state == State.DISCONNECTED) return;
-        cancelConnectionTimer();
-        closeSession(CloseCodes.GOING_AWAY);
-        onClose();
-    }
-
     public void send(String message) {
         wsSession.getAsyncRemote().sendText(message);
+    }
+
+    public void disconnect() {
+        cancelConnectionTimer();
+
+        if (this.state != State.DISCONNECTED) {
+            closeSession(CloseCodes.GOING_AWAY);
+            onClose();
+        }
     }
 
     public void dispose() {
