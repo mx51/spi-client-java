@@ -28,13 +28,16 @@ public class Spi {
 
     private static final Logger LOG = LogManager.getLogger("spi");
 
-    static final String PROTOCOL_VERSION = "2.1.0";
+    static final String PROTOCOL_VERSION = "2.3.0";
 
     private String posId;
     private String eftposAddress;
     private Secrets secrets;
     private MessageStamp spiMessageStamp;
-
+    public String posVendorId;
+    public String posVersion;
+    private boolean hasSetInfo;
+    
     private Connection conn;
     private final long pongTimeout = TimeUnit.SECONDS.toMillis(5);
     private final long pingFrequency = TimeUnit.SECONDS.toMillis(18);
@@ -68,7 +71,6 @@ public class Spi {
     private Timer reconnectTimer;
 
     final SpiConfig config = new SpiConfig();
-
     //endregion
 
     //region Setup methods
@@ -129,6 +131,12 @@ public class Spi {
      * Most importantly, it connects to the EFTPOS server if it has secrets.
      */
     public void start() {
+        if (posVendorId.length() == 0 || posVersion.length() == 0) {
+            // POS information is now required to be set
+        	LOG.info("Missing POS vendor ID and version. posVendorId and posVersion are required before starting");
+        	return;
+        }        
+    	
         reconnectTimer = new Timer();
 
         resetConn();
@@ -481,7 +489,7 @@ public class Spi {
      */
     @NotNull
     public InitiateTxResult initiatePurchaseTx(String posRefId, int purchaseAmount) {
-        return initiatePurchaseTx(posRefId, purchaseAmount, 0, 0, false);
+        return initiatePurchaseTx(posRefId, purchaseAmount, 0, 0, false, null);
     }
 
     /**
@@ -494,10 +502,11 @@ public class Spi {
      * @param tipAmount        The Tip Amount in cents.
      * @param cashoutAmount    The cashout Amount in cents.
      * @param promptForCashout Whether to prompt your customer for cashout on the EFTPOS.
+     * @param options 		   Additional options applied on per-transaction basis.
      * @return Initiation result {@link InitiateTxResult}.
      */
     @NotNull
-    public InitiateTxResult initiatePurchaseTx(String posRefId, int purchaseAmount, int tipAmount, int cashoutAmount, boolean promptForCashout) {
+    public InitiateTxResult initiatePurchaseTx(String posRefId, int purchaseAmount, int tipAmount, int cashoutAmount, boolean promptForCashout, TransactionOptions options) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         if (tipAmount > 0 && (cashoutAmount > 0 || promptForCashout))
@@ -509,6 +518,7 @@ public class Spi {
 
             final PurchaseRequest request = PurchaseHelper.createPurchaseRequest(purchaseAmount, posRefId, tipAmount, cashoutAmount, promptForCashout);
             request.setConfig(config);
+            request.setOptions(options);
             final Message message = request.toMessage();
 
             setCurrentTxFlowState(new TransactionFlowState(
@@ -1391,6 +1401,9 @@ public class Spi {
                     txFlowStateChanged();
                 }
             } else {
+            	if (!hasSetInfo) {
+            		callSetPosInfo();
+            	}
                 final SpiPayAtTable spiPat = this.spiPat;
                 if (spiPat != null) {
                     spiPat.pushPayAtTableConfig();
@@ -1399,7 +1412,12 @@ public class Spi {
         }
     }
 
-    /**
+    private void callSetPosInfo() {
+    	final SetPosInfoRequest setPosInfoRequest = new SetPosInfoRequest(posVersion, posVendorId, "java", getVersion(), DeviceInfo.getAppDeviceInfo());
+        send(setPosInfoRequest.toMessage());
+	}
+
+	/**
      * Send a ping to the server.
      */
     private void doPing() {
@@ -1495,6 +1513,10 @@ public class Spi {
             handleIncomingPong(m);
         } else if (Events.KEY_ROLL_REQUEST.equals(eventName)) {
             handleKeyRollingRequest(m);
+        } else if (Events.CANCEL_TRANSACTION_RESPONSE.equals(eventName)) {
+        	handleCancelTransactionResponse(m);
+        } else if (Events.SET_POSINFO_RESPONSE.equals(eventName)) {
+        	handleSetPosInfoResponse(m);
         } else if (Events.PAY_AT_TABLE_GET_TABLE_CONFIG.equals(eventName)) {
             final SpiPayAtTable spiPat = this.spiPat;
             if (spiPat != null) {
@@ -1587,5 +1609,43 @@ public class Spi {
         }
 
     }
+    
+    /**
+     * When the transaction cancel response is returned.
+     */
+    private void handleCancelTransactionResponse(@NotNull Message m) {
+        synchronized (txLock) {        	
+        	if (isTxResponseUnexpected(m, "Cancel", true)) return;
+        	
+        	final TransactionFlowState txState = getCurrentTxFlowState();
+        	final CancelTransactionResponse response = new CancelTransactionResponse(m);
+        	
+        	if (response.isSuccess()) {
+        		return;
+        	}
+        	
+        	LOG.info("Failed to cancel transaction: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
+        	
+        	txState.cancelFailed("Failed to cancel transaction: " + response.getErrorDetail() +". Check EFTPOS.");
+       
+        	txFlowStateChanged();
+        }                
+    }
 
+    /**
+     * When the result response for the POS info is returned.
+     */
+    private void handleSetPosInfoResponse(@NotNull Message m) {
+        synchronized (txLock) {        	
+        	final SetPosInfoResponse response = new SetPosInfoResponse(new Message());
+        	
+        	if (response.isSuccess()) {
+        		this.hasSetInfo = true;
+        		LOG.info("Setting POS info successful");
+        	}
+        	else {        		
+        		LOG.info("Setting POS info failed: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
+        	}
+        }                
+    }
 }

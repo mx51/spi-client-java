@@ -49,6 +49,11 @@ public class TransactionFlowState {
         this.displayMessage = msg;
     }
 
+    public void cancelFailed(String msg) {
+        this.attemptingToCancel = false;
+        this.displayMessage = msg;
+    }
+    
     public void callingGlt() {
         this.awaitingGltResponse = true;
         this.lastStateRequestTime = System.currentTimeMillis();
