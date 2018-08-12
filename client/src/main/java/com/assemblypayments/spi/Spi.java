@@ -34,8 +34,8 @@ public class Spi {
     private String eftposAddress;
     private Secrets secrets;
     private MessageStamp spiMessageStamp;
-    public String posVendorId;
-    public String posVersion;
+    private String posVendorId;
+    private String posVersion;
     private boolean hasSetInfo;
     
     private Connection conn;
@@ -131,7 +131,7 @@ public class Spi {
      * Most importantly, it connects to the EFTPOS server if it has secrets.
      */
     public void start() {
-        if (posVendorId.length() == 0 || posVersion.length() == 0) {
+        if (StringUtils.isBlank(posVendorId) || StringUtils.isBlank(posVersion)) {
             // POS information is now required to be set
         	LOG.info("Missing POS vendor ID and version. posVendorId and posVersion are required before starting");
         	return;
@@ -180,6 +180,11 @@ public class Spi {
         return true;
     }
 
+    public void setPosInfo(String posVendorId, String posVersion) {
+        this.posVendorId = posVendorId;
+        this.posVersion = posVersion;
+    }
+    
     /**
      * Retrieves package version of the SPI client library.
      *
@@ -389,8 +394,7 @@ public class Spi {
             return false;
         }
 
-        if (posId == null || StringUtils.isWhitespace(posId) ||
-                eftposAddress == null || StringUtils.isWhitespace(eftposAddress)) {
+        if (StringUtils.isBlank(posId) || StringUtils.isBlank(eftposAddress)) {
             LOG.warn("Tried to pair but missing posId and/or eftposAddress");
             return false;
         }
@@ -502,7 +506,7 @@ public class Spi {
      * @param tipAmount        The Tip Amount in cents.
      * @param cashoutAmount    The cashout Amount in cents.
      * @param promptForCashout Whether to prompt your customer for cashout on the EFTPOS.
-     * @param options 		   Additional options applied on per-transaction basis.
+     * @param options          Additional options applied on per-transaction basis.
      * @return Initiation result {@link InitiateTxResult}.
      */
     @NotNull
@@ -1401,13 +1405,13 @@ public class Spi {
                     txFlowStateChanged();
                 }
             } else {
-            	if (!hasSetInfo) {
-            		callSetPosInfo();
-            	}
-                final SpiPayAtTable spiPat = this.spiPat;
-                if (spiPat != null) {
-                    spiPat.pushPayAtTableConfig();
-                }
+				if (!hasSetInfo) {
+					callSetPosInfo();
+				}
+				final SpiPayAtTable spiPat = this.spiPat;
+				if (spiPat != null) {
+					spiPat.pushPayAtTableConfig();
+				}
             }
         }
     }

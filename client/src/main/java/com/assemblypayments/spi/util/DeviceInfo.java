@@ -5,17 +5,13 @@ import java.util.Map;
 
 public final class DeviceInfo {
 
-    private DeviceInfo() {
-    }
+	private DeviceInfo() {
+	}
 
-    public static Map<String, String> getAppDeviceInfo () {
-    	Map<String, String> deviceInfo = new HashMap<String, String>();
-        String name = "os.name";
-        String version = "os.version";
-        
-        deviceInfo.put("device_system: ", System.getProperty(name) + " " + System.getProperty(version));
-        
-        return deviceInfo;
-    }
+	public static Map<String, String> getAppDeviceInfo() {
+		Map<String, String> deviceInfo = new HashMap<String, String>();
+		deviceInfo.put("device_system: ", System.getProperty("os.name") + " " + System.getProperty("os.version"));
+		return deviceInfo;
+	}
 
 }
