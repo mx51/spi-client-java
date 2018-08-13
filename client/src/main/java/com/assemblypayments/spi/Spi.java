@@ -133,7 +133,7 @@ public class Spi {
     public void start() {
         if (StringUtils.isBlank(posVendorId) || StringUtils.isBlank(posVersion)) {
             // POS information is now required to be set
-        	LOG.info("Missing POS vendor ID and version. posVendorId and posVersion are required before starting");
+        	LOG.warn("Missing POS vendor ID and version. posVendorId and posVersion are required before starting");
         	return;
         }        
     	
@@ -1405,13 +1405,13 @@ public class Spi {
                     txFlowStateChanged();
                 }
             } else {
-				if (!hasSetInfo) {
-					callSetPosInfo();
-				}
-				final SpiPayAtTable spiPat = this.spiPat;
-				if (spiPat != null) {
-					spiPat.pushPayAtTableConfig();
-				}
+            	if (!hasSetInfo) {
+            		callSetPosInfo();
+            	}
+            	final SpiPayAtTable spiPat = this.spiPat;
+            	if (spiPat != null) {
+            		spiPat.pushPayAtTableConfig();
+            	}
             }
         }
     }
@@ -1519,7 +1519,7 @@ public class Spi {
             handleKeyRollingRequest(m);
         } else if (Events.CANCEL_TRANSACTION_RESPONSE.equals(eventName)) {
         	handleCancelTransactionResponse(m);
-        } else if (Events.SET_POSINFO_RESPONSE.equals(eventName)) {
+        } else if (Events.SET_POS_INFO_RESPONSE.equals(eventName)) {
         	handleSetPosInfoResponse(m);
         } else if (Events.PAY_AT_TABLE_GET_TABLE_CONFIG.equals(eventName)) {
             final SpiPayAtTable spiPat = this.spiPat;
@@ -1624,11 +1624,9 @@ public class Spi {
         	final TransactionFlowState txState = getCurrentTxFlowState();
         	final CancelTransactionResponse response = new CancelTransactionResponse(m);
         	
-        	if (response.isSuccess()) {
-        		return;
-        	}
+        	if (response.isSuccess()) return;
         	
-        	LOG.info("Failed to cancel transaction: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
+        	LOG.warn("Failed to cancel transaction: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
         	
         	txState.cancelFailed("Failed to cancel transaction: " + response.getErrorDetail() +". Check EFTPOS.");
        
@@ -1646,9 +1644,8 @@ public class Spi {
         	if (response.isSuccess()) {
         		this.hasSetInfo = true;
         		LOG.info("Setting POS info successful");
-        	}
-        	else {        		
-        		LOG.info("Setting POS info failed: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
+        	} else {        		
+        		LOG.warn("Setting POS info failed: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
         	}
         }                
     }

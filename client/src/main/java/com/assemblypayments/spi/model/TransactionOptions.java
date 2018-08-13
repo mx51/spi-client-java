@@ -25,7 +25,7 @@ public class TransactionOptions {
         this.merchantReceiptFooter = merchantReceiptFooter;
     }
     
-	public void addOptions(Map<String, Object> messageData) {
+    public void addOptions(Map<String, Object> messageData) {
 		addOptionObject(customerReceiptHeader, "customer_receipt_header", messageData);
 		addOptionObject(customerReceiptFooter, "customer_receipt_footer", messageData);
 		addOptionObject(merchantReceiptHeader, "merchant_receipt_header", messageData);

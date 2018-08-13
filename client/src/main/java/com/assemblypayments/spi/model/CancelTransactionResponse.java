@@ -3,7 +3,6 @@ package com.assemblypayments.spi.model;
 import org.jetbrains.annotations.NotNull;
 
 public class CancelTransactionResponse {
-
 	private final Message m;
 	public final String posRefId;
 	private final Boolean success;
@@ -15,14 +14,6 @@ public class CancelTransactionResponse {
     }
 
     public boolean isSuccess() {
-        return success;
-    }
-
-    /**
-     * @deprecated Use {@link #isSuccess()} instead.
-     */
-    @Deprecated
-    public Boolean getSuccess() {
         return success;
     }
     

@@ -3,7 +3,6 @@ package com.assemblypayments.spi.model;
 import org.jetbrains.annotations.NotNull;
 
 public class SetPosInfoResponse {
-
 	private final Boolean success;
 	private final Message m;
 

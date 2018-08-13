@@ -3,16 +3,19 @@ package com.assemblypayments.spi.model;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jetbrains.annotations.NonNls;
+import org.jetbrains.annotations.NotNull;
+
 import com.assemblypayments.spi.util.Events;
 import com.assemblypayments.spi.util.RequestIdHelper;
 
 public class SetPosInfoRequest {
 
-    public final String version;
-    public final String vendorId;
-    public final String libraryLanguage;
-    public final String libraryVersion;
-    public final Map<String, String> otherInfo;
+    private final String version;
+    private final String vendorId;
+    private final String libraryLanguage;
+    private final String libraryVersion;
+    private final Map<String, String> otherInfo;
     
     public SetPosInfoRequest(String version, String vendorId, String libraryLanguage, String libraryVersion, Map<String, String> otherInfo) {
         this.version = version;
@@ -22,15 +25,14 @@ public class SetPosInfoRequest {
         this.otherInfo = otherInfo;
     }
 
-    public Message toMessage() {
+	public Message toMessage() {
         final Map<String, Object> data = new HashMap<String, Object>();
         data.put("pos_version", version);
         data.put("pos_vendor_id", vendorId);
         data.put("library_language", libraryLanguage);
         data.put("library_version", libraryVersion);
-        data.put("other_info", otherInfo);
-        
+        data.put("other_info", otherInfo);        
 
-        return new Message(RequestIdHelper.id("prav"), Events.SET_POSINFO_REQUEST, data, true);
+        return new Message(RequestIdHelper.id("prav"), Events.SET_POS_INFO_REQUEST, data, true);
     }
 }
