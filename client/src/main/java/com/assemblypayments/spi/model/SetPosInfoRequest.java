@@ -16,7 +16,7 @@ public class SetPosInfoRequest {
     private final String libraryLanguage;
     private final String libraryVersion;
     private final Map<String, String> otherInfo;
-    
+
     public SetPosInfoRequest(String version, String vendorId, String libraryLanguage, String libraryVersion, Map<String, String> otherInfo) {
         this.version = version;
         this.vendorId = vendorId;
@@ -25,13 +25,14 @@ public class SetPosInfoRequest {
         this.otherInfo = otherInfo;
     }
 
-	public Message toMessage() {
+    @NotNull
+    public Message toMessage() {
         final Map<String, Object> data = new HashMap<String, Object>();
         data.put("pos_version", version);
         data.put("pos_vendor_id", vendorId);
         data.put("library_language", libraryLanguage);
         data.put("library_version", libraryVersion);
-        data.put("other_info", otherInfo);        
+        data.put("other_info", otherInfo);
 
         return new Message(RequestIdHelper.id("prav"), Events.SET_POS_INFO_REQUEST, data, true);
     }

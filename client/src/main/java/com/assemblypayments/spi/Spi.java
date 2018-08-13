@@ -37,7 +37,7 @@ public class Spi {
     private String posVendorId;
     private String posVersion;
     private boolean hasSetInfo;
-    
+
     private Connection conn;
     private final long pongTimeout = TimeUnit.SECONDS.toMillis(5);
     private final long pingFrequency = TimeUnit.SECONDS.toMillis(18);
@@ -133,10 +133,10 @@ public class Spi {
     public void start() {
         if (StringUtils.isBlank(posVendorId) || StringUtils.isBlank(posVersion)) {
             // POS information is now required to be set
-        	LOG.warn("Missing POS vendor ID and version. posVendorId and posVersion are required before starting");
-        	return;
-        }        
-    	
+            LOG.warn("Missing POS vendor ID and version. posVendorId and posVersion are required before starting");
+            return;
+        }
+
         reconnectTimer = new Timer();
 
         resetConn();
@@ -184,7 +184,7 @@ public class Spi {
         this.posVendorId = posVendorId;
         this.posVersion = posVersion;
     }
-    
+
     /**
      * Retrieves package version of the SPI client library.
      *
@@ -1405,23 +1405,23 @@ public class Spi {
                     txFlowStateChanged();
                 }
             } else {
-            	if (!hasSetInfo) {
-            		callSetPosInfo();
-            	}
-            	final SpiPayAtTable spiPat = this.spiPat;
-            	if (spiPat != null) {
-            		spiPat.pushPayAtTableConfig();
-            	}
+                if (!hasSetInfo) {
+                    callSetPosInfo();
+                }
+                final SpiPayAtTable spiPat = this.spiPat;
+                if (spiPat != null) {
+                    spiPat.pushPayAtTableConfig();
+                }
             }
         }
     }
 
     private void callSetPosInfo() {
-    	final SetPosInfoRequest setPosInfoRequest = new SetPosInfoRequest(posVersion, posVendorId, "java", getVersion(), DeviceInfo.getAppDeviceInfo());
+        final SetPosInfoRequest setPosInfoRequest = new SetPosInfoRequest(posVersion, posVendorId, "java", getVersion(), DeviceInfo.getAppDeviceInfo());
         send(setPosInfoRequest.toMessage());
-	}
+    }
 
-	/**
+    /**
      * Send a ping to the server.
      */
     private void doPing() {
@@ -1518,9 +1518,9 @@ public class Spi {
         } else if (Events.KEY_ROLL_REQUEST.equals(eventName)) {
             handleKeyRollingRequest(m);
         } else if (Events.CANCEL_TRANSACTION_RESPONSE.equals(eventName)) {
-        	handleCancelTransactionResponse(m);
+            handleCancelTransactionResponse(m);
         } else if (Events.SET_POS_INFO_RESPONSE.equals(eventName)) {
-        	handleSetPosInfoResponse(m);
+            handleSetPosInfoResponse(m);
         } else if (Events.PAY_AT_TABLE_GET_TABLE_CONFIG.equals(eventName)) {
             final SpiPayAtTable spiPat = this.spiPat;
             if (spiPat != null) {
@@ -1613,40 +1613,40 @@ public class Spi {
         }
 
     }
-    
+
     /**
      * When the transaction cancel response is returned.
      */
     private void handleCancelTransactionResponse(@NotNull Message m) {
-        synchronized (txLock) {        	
-        	if (isTxResponseUnexpected(m, "Cancel", true)) return;
-        	
-        	final TransactionFlowState txState = getCurrentTxFlowState();
-        	final CancelTransactionResponse response = new CancelTransactionResponse(m);
-        	
-        	if (response.isSuccess()) return;
-        	
-        	LOG.warn("Failed to cancel transaction: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
-        	
-        	txState.cancelFailed("Failed to cancel transaction: " + response.getErrorDetail() +". Check EFTPOS.");
-       
-        	txFlowStateChanged();
-        }                
+        synchronized (txLock) {
+            if (isTxResponseUnexpected(m, "Cancel", true)) return;
+
+            final TransactionFlowState txState = getCurrentTxFlowState();
+            final CancelTransactionResponse response = new CancelTransactionResponse(m);
+
+            if (response.isSuccess()) return;
+
+            LOG.warn("Failed to cancel transaction: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
+
+            txState.cancelFailed("Failed to cancel transaction: " + response.getErrorDetail() + ". Check EFTPOS.");
+
+            txFlowStateChanged();
+        }
     }
 
     /**
      * When the result response for the POS info is returned.
      */
     private void handleSetPosInfoResponse(@NotNull Message m) {
-        synchronized (txLock) {        	
-        	final SetPosInfoResponse response = new SetPosInfoResponse(new Message());
-        	
-        	if (response.isSuccess()) {
-        		this.hasSetInfo = true;
-        		LOG.info("Setting POS info successful");
-        	} else {        		
-        		LOG.warn("Setting POS info failed: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
-        	}
-        }                
+        synchronized (txLock) {
+            final SetPosInfoResponse response = new SetPosInfoResponse(new Message());
+
+            if (response.isSuccess()) {
+                this.hasSetInfo = true;
+                LOG.info("Setting POS info successful");
+            } else {
+                LOG.warn("Setting POS info failed: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
+            }
+        }
     }
 }
