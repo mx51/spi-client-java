@@ -42,10 +42,9 @@ public final class Events {
     public static final String SETTLE_RESPONSE = "settle_response";
     public static final String SETTLEMENT_ENQUIRY_REQUEST = "settlement_enquiry";
     public static final String SETTLEMENT_ENQUIRY_RESPONSE = "settlement_enquiry_response";
-    
+
     public static final String SET_POS_INFO_REQUEST = "set_pos_info";
     public static final String SET_POS_INFO_RESPONSE = "set_pos_info_response";
-    
 
     public static final String KEY_ROLL_REQUEST = "request_use_next_keys";
     public static final String KEY_ROLL_RESPONSE = "response_use_next_keys";

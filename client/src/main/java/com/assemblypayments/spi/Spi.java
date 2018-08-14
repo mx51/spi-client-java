@@ -180,6 +180,14 @@ public class Spi {
         return true;
     }
 
+    /**
+     * Sets values used to identify the POS software to the EFTPOS terminal.
+     * <p>
+     * Must be set before starting!
+     *
+     * @param posVendorId Vendor identifier of the POS itself.
+     * @param posVersion  Version string of the POS itself.
+     */
     public void setPosInfo(String posVendorId, String posVersion) {
         this.posVendorId = posVendorId;
         this.posVersion = posVersion;

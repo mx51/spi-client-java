@@ -10,7 +10,7 @@ public final class DeviceInfo {
 
     public static Map<String, String> getAppDeviceInfo() {
         Map<String, String> deviceInfo = new HashMap<String, String>();
-        deviceInfo.put("device_system: ", System.getProperty("os.name") + " " + System.getProperty("os.version"));
+        deviceInfo.put("device_system", System.getProperty("os.name") + " " + System.getProperty("os.version"));
         return deviceInfo;
     }
 
