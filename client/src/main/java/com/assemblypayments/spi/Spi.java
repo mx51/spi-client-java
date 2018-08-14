@@ -12,8 +12,8 @@ import javax.websocket.DeploymentException;
 import java.io.IOException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -65,7 +65,8 @@ public class Spi {
 
     private SpiPreauth spiPreauth;
 
-    private Timer reconnectTimer;
+    private ScheduledThreadPoolExecutor reconnectExecutor;
+    private ScheduledFuture reconnectFuture;
 
     final SpiConfig config = new SpiConfig();
 
@@ -129,7 +130,8 @@ public class Spi {
      * Most importantly, it connects to the EFTPOS server if it has secrets.
      */
     public void start() {
-        reconnectTimer = new Timer();
+        reconnectExecutor = new ScheduledThreadPoolExecutor(5);
+        reconnectFuture = null;
 
         resetConn();
         startTransactionMonitoring();
@@ -1276,7 +1278,7 @@ public class Spi {
                     }
 
                     LOG.info("Will try to reconnect in 5s...");
-                    reconnectTimer.schedule(new TimerTask() {
+                    reconnectFuture = reconnectExecutor.scheduleAtFixedRate(new Runnable() {
                         @Override
                         public void run() {
                             if (conn == null) return; // This means the instance has been disposed. Aborting.
@@ -1292,7 +1294,7 @@ public class Spi {
                                 }
                             }
                         }
-                    }, TimeUnit.SECONDS.toMillis(5));
+                    }, 5, 5, TimeUnit.SECONDS);
                 } else if (getCurrentFlow() == SpiFlow.PAIRING) {
                     LOG.warn("Lost connection during pairing.");
                     getCurrentPairingFlowState().setMessage("Could not Connect to Pair. Check Network and Try Again...");
@@ -1557,8 +1559,12 @@ public class Spi {
         conn.dispose();
 
         // Clean up timer
-        reconnectTimer.cancel();
-        reconnectTimer = null;
+        if (reconnectFuture != null) {
+            reconnectFuture.cancel(true);
+            reconnectFuture = null;
+        }
+        reconnectExecutor.shutdownNow();
+        reconnectExecutor = null;
     }
 
     //endregion
