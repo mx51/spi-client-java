@@ -22,6 +22,7 @@ public class Pos {
     private void start() {
         try {
             spi = new Spi(posId, eftposAddress, spiSecrets);
+            spi.setPosInfo("assembly", "2.3.0");
         } catch (Spi.CompatibilityException e) {
             System.out.println("# JDK compatibility check failed: " + e.getCause().getMessage());
             return;
