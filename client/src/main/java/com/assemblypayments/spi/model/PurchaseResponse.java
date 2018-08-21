@@ -30,6 +30,10 @@ public class PurchaseResponse extends AbstractChargeResponse {
     public int getBankCashAmount() {
         return m.getDataIntValue("bank_cash_amount");
     }
+    
+    public int getSurchargeAmount() {
+        return m.getDataIntValue("surcharge_amount");
+    }
 
     @NotNull
     public Map<String, Object> toPaymentSummary() {
@@ -47,6 +51,7 @@ public class PurchaseResponse extends AbstractChargeResponse {
         data.put("terminal_id", getTerminalId());
         data.put("terminal_ref_id", getTerminalReferenceId());
         data.put("tip_amount", getTipAmount());
+        data.put("surcharge_amount", getSurchargeAmount());
         return data;
     }
 
