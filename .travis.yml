@@ -1,15 +1,28 @@
 sudo: false
-
 language: java
 jdk: oraclejdk8
 
-script: ./gradlew test
+script: "./gradlew client:test client:distZip"
+
+deploy:
+- provider: script
+  script: ./gradlew client:bintrayUpload -Pproject.version=$TRAVIS_TAG -Pbintray.user=$BINTRAY_USER -Pbintray.key=$BINTRAY_KEY
+  skip_cleanup: true
+  on:
+    tags: true
+- provider: releases
+  api_key:
+    secure: iDEuf6xcD7RNuKSAJZ+Nz40iFAa+5x1Gu9efGL6W/wVdcvrz6d4QAzXpbN33iHOFD8Gij11oIA3OJM4ByXdhXNwfNpRhk35rmn8KVr+cELAguhBuG1nr3cqaB1SOMFjaf3vOwYFHmW49ZevugeMwrWLHIREmmM68N5j6Jdhx7uGtrA1RdrWhcHXc3ugph/RPLDlAxvydJUT1p66YCa287qg1p+kYs6tcoNdiX6wqyVGkW4uoJZNaNOIp5g5LemHngtxb3rI1Q55hC64YYu0IIkAbFlhk8riREAjTlSzdUpmI+En7j9j0e+0Yb9ReqjoDKRYVrbu6Cj6pJhY5sd97O0hsWyf8QL1l87uQqp0GBg9E/20exxkOgIdmq56sl2uE+d7L0CQLjbIVwgeVxuFuiZPpPs3bV+m8HB9uGcnfE2liIh2s2RDkNPkUQ7iF5X4IROhCx8nH/ya/GQ2v4rAkAZvnEWAyfPEuPIhRpp7J2qDDBRr0NuIvrs4j0HNHDVLX1GLjNwhU1tIdncIvmzY0WsXqT8CJ53hAiiwk+whCWeecPGNkBimGIYJmCUW+nNHMllZenvnVOguazI0dIckduJ8wdQNuLq8MZZp6z3tI0dCx3DLHz/tU3cxeBMJ6t3a+2s4I2NQAqNLSOLH1jLG3jcSEZbC3t2wgG8ON744RoFY=
+  file:
+  - "./client/build/distributions/spi-client-java-$TRAVIS_TAG.zip"
+  skip_cleanup: true
+  on:
+    tags: true
 
 before_cache:
-  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
-  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
-
+- rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+- rm -fr $HOME/.gradle/caches/*/plugin-resolution/
 cache:
   directories:
-    - $HOME/.gradle/caches/
-    - $HOME/.gradle/wrapper/
+  - "$HOME/.gradle/caches/"
+  - "$HOME/.gradle/wrapper/"
