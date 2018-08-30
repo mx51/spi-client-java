@@ -12,8 +12,8 @@ import javax.websocket.DeploymentException;
 import java.io.IOException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -30,6 +30,13 @@ public class Spi {
 
     static final String PROTOCOL_VERSION = "2.3.0";
 
+    private static final long RECONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    private static final long TX_MONITOR_CHECK_FREQUENCY = TimeUnit.SECONDS.toMillis(1);
+    private static final long CHECK_ON_TX_FREQUENCY = TimeUnit.SECONDS.toMillis(20);
+    private static final long MAX_WAIT_FOR_CANCEL_TX = TimeUnit.SECONDS.toMillis(10);
+    private static final long PONG_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    private static final long PING_FREQUENCY = TimeUnit.SECONDS.toMillis(18);
+
     private String posId;
     private String eftposAddress;
     private Secrets secrets;
@@ -39,8 +46,6 @@ public class Spi {
     private boolean hasSetInfo;
 
     private Connection conn;
-    private final long pongTimeout = TimeUnit.SECONDS.toMillis(5);
-    private final long pingFrequency = TimeUnit.SECONDS.toMillis(18);
 
     private SpiStatus currentStatus;
     private SpiFlow currentFlow;
@@ -59,16 +64,14 @@ public class Spi {
     private Thread transactionMonitoringThread;
 
     private final Object txLock = new Object();
-    private final long txMonitorCheckFrequency = TimeUnit.SECONDS.toMillis(1);
-    private final long checkOnTxFrequency = TimeUnit.SECONDS.toMillis(20);
-    private final long maxWaitForCancelTx = TimeUnit.SECONDS.toMillis(10);
     private final long missedPongsToDisconnect = 2;
 
     private SpiPayAtTable spiPat;
 
     private SpiPreauth spiPreauth;
 
-    private Timer reconnectTimer;
+    private ScheduledThreadPoolExecutor reconnectExecutor;
+    private ScheduledFuture reconnectFuture;
 
     final SpiConfig config = new SpiConfig();
     //endregion
@@ -137,7 +140,8 @@ public class Spi {
             return;
         }
 
-        reconnectTimer = new Timer();
+        reconnectExecutor = new ScheduledThreadPoolExecutor(5);
+        reconnectFuture = null;
 
         resetConn();
         startTransactionMonitoring();
@@ -1194,12 +1198,12 @@ public class Spi {
                     synchronized (txLock) {
                         final TransactionFlowState txState = getCurrentTxFlowState();
                         if (getCurrentFlow() == SpiFlow.TRANSACTION && !txState.isFinished()) {
-                            if (txState.isAttemptingToCancel() && System.currentTimeMillis() > txState.getCancelAttemptTime() + maxWaitForCancelTx) {
+                            if (txState.isAttemptingToCancel() && System.currentTimeMillis() > txState.getCancelAttemptTime() + MAX_WAIT_FOR_CANCEL_TX) {
                                 // TH-2T - too long since cancel attempt - Consider unknown
                                 LOG.info("Been too long waiting for transaction to cancel.");
                                 txState.unknownCompleted("Waited long enough for cancel transaction result. Check EFTPOS. ");
                                 needsPublishing = true;
-                            } else if (txState.isRequestSent() && System.currentTimeMillis() > txState.getLastStateRequestTime() + checkOnTxFrequency) {
+                            } else if (txState.isRequestSent() && System.currentTimeMillis() > txState.getLastStateRequestTime() + CHECK_ON_TX_FREQUENCY) {
                                 // TH-1T, TH-4T - It's been a while since we received an update, let's call a GLT
                                 LOG.info("Checking on our transaction. Last we asked was at " + txState.getLastStateRequestTime() + "...");
                                 txState.callingGlt();
@@ -1210,7 +1214,7 @@ public class Spi {
                     if (needsPublishing) txFlowStateChanged();
 
                     try {
-                        Thread.sleep(txMonitorCheckFrequency);
+                        Thread.sleep(TX_MONITOR_CHECK_FREQUENCY);
                     } catch (InterruptedException e) {
                         return;
                     }
@@ -1298,7 +1302,7 @@ public class Spi {
                     }
 
                     LOG.info("Will try to reconnect in 5s...");
-                    reconnectTimer.schedule(new TimerTask() {
+                    reconnectFuture = reconnectExecutor.scheduleAtFixedRate(new Runnable() {
                         @Override
                         public void run() {
                             if (conn == null) return; // This means the instance has been disposed. Aborting.
@@ -1314,7 +1318,7 @@ public class Spi {
                                 }
                             }
                         }
-                    }, TimeUnit.SECONDS.toMillis(5));
+                    }, RECONNECTION_TIMEOUT, RECONNECTION_TIMEOUT, TimeUnit.MILLISECONDS);
                 } else if (getCurrentFlow() == SpiFlow.PAIRING) {
                     LOG.warn("Lost connection during pairing.");
                     getCurrentPairingFlowState().setMessage("Could not Connect to Pair. Check Network and Try Again...");
@@ -1342,7 +1346,7 @@ public class Spi {
                     doPing();
 
                     try {
-                        Thread.sleep(pongTimeout);
+                        Thread.sleep(PONG_TIMEOUT);
                     } catch (InterruptedException e) {
                         return;
                     }
@@ -1368,7 +1372,7 @@ public class Spi {
 
                     missedPongsCount = 0;
                     try {
-                        Thread.sleep(pingFrequency - pongTimeout);
+                        Thread.sleep(PING_FREQUENCY - PONG_TIMEOUT);
                     } catch (InterruptedException e) {
                         return;
                     }
@@ -1591,8 +1595,12 @@ public class Spi {
         conn.dispose();
 
         // Clean up timer
-        reconnectTimer.cancel();
-        reconnectTimer = null;
+        if (reconnectFuture != null) {
+            reconnectFuture.cancel(true);
+            reconnectFuture = null;
+        }
+        reconnectExecutor.shutdownNow();
+        reconnectExecutor = null;
     }
 
     //endregion
