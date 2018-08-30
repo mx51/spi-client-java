@@ -1,4 +1,4 @@
-# SPI Client Java
+# SPI Client Java [![Build Status](https://travis-ci.org/AssemblyPayments/spi-client-java.svg?branch=master)](https://travis-ci.org/AssemblyPayments/spi-client-java)
 
 This is the Java Client Library for Assembly Payments' In-Store Integration.
 

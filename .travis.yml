@@ -6,8 +6,7 @@ script: ./gradlew clean client:test
 
 deploy:
 - provider: script
-  script:
-  - ./gradlew client:distZip client:bintrayUpload
+  script: ./gradlew client:distZip client:bintrayUpload
     -Pproject.version=$TRAVIS_TAG
     -Pbintray.user=$BINTRAY_USER
     -Pbintray.key=$BINTRAY_KEY
