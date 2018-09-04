@@ -2,13 +2,13 @@ package com.assemblypayments.spi;
 
 import com.assemblypayments.spi.model.*;
 import com.assemblypayments.spi.util.Events;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SpiPreauth {
 
-    private static final Logger LOG = LogManager.getLogger("spipreauth");
+    private static final Logger LOG = LoggerFactory.getLogger("spipreauth");
 
     private final Spi spi;
     private final Object txLock;

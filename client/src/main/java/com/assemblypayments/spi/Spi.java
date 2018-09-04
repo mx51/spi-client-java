@@ -3,10 +3,10 @@ package com.assemblypayments.spi;
 import com.assemblypayments.spi.model.*;
 import com.assemblypayments.spi.util.*;
 import org.apache.commons.lang.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.websocket.DeploymentException;
 import java.io.IOException;
@@ -26,7 +26,7 @@ public class Spi {
 
     //region Private state
 
-    private static final Logger LOG = LogManager.getLogger("spi");
+    private static final Logger LOG = LoggerFactory.getLogger("spi");
 
     static final String PROTOCOL_VERSION = "2.3.0";
 

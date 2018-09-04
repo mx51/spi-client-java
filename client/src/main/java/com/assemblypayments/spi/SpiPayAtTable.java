@@ -2,16 +2,16 @@ package com.assemblypayments.spi;
 
 import com.assemblypayments.spi.model.*;
 import com.assemblypayments.spi.util.RequestIdHelper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class SpiPayAtTable {
 
-    private static final Logger LOG = LogManager.getLogger("spipat");
+    private static final Logger LOG = LoggerFactory.getLogger("spipat");
 
     private final Spi spi;
 
