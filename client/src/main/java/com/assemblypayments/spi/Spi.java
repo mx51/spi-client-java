@@ -1270,7 +1270,7 @@ public class Spi {
                 break;
 
             case CONNECTED:
-                if (getCurrentFlow() == SpiFlow.PAIRING) {
+                if (getCurrentFlow() == SpiFlow.PAIRING && getCurrentStatus() == SpiStatus.UNPAIRED) {
                     getCurrentPairingFlowState().setMessage("Requesting to pair...");
                     pairingFlowStateChanged();
                     final PairRequest pr = PairingHelper.newPairRequest();
@@ -1655,7 +1655,7 @@ public class Spi {
      */
     private void handleSetPosInfoResponse(@NotNull Message m) {
         synchronized (txLock) {
-            final SetPosInfoResponse response = new SetPosInfoResponse(new Message());
+            final SetPosInfoResponse response = new SetPosInfoResponse(m);
 
             if (response.isSuccess()) {
                 this.hasSetInfo = true;
