@@ -28,7 +28,7 @@ public class Spi {
 
     private static final Logger LOG = LoggerFactory.getLogger("spi");
 
-    static final String PROTOCOL_VERSION = "2.3.0";
+    static final String PROTOCOL_VERSION = "2.3.2";
 
     private static final long RECONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long TX_MONITOR_CHECK_FREQUENCY = TimeUnit.SECONDS.toMillis(1);
@@ -1270,7 +1270,7 @@ public class Spi {
                 break;
 
             case CONNECTED:
-                if (getCurrentFlow() == SpiFlow.PAIRING) {
+                if (getCurrentFlow() == SpiFlow.PAIRING && getCurrentStatus() == SpiStatus.UNPAIRED) {
                     getCurrentPairingFlowState().setMessage("Requesting to pair...");
                     pairingFlowStateChanged();
                     final PairRequest pr = PairingHelper.newPairRequest();
@@ -1655,7 +1655,7 @@ public class Spi {
      */
     private void handleSetPosInfoResponse(@NotNull Message m) {
         synchronized (txLock) {
-            final SetPosInfoResponse response = new SetPosInfoResponse(new Message());
+            final SetPosInfoResponse response = new SetPosInfoResponse(m);
 
             if (response.isSuccess()) {
                 this.hasSetInfo = true;
