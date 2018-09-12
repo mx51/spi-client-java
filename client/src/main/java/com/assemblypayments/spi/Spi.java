@@ -9,15 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.websocket.DeploymentException;
-import java.io.IOException;
-import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.jar.Attributes;
-import java.util.jar.JarFile;
-import java.util.jar.Manifest;
 
 /**
  * SPI integration client, used to manage connection to the terminal.
@@ -29,6 +24,7 @@ public class Spi {
     private static final Logger LOG = LoggerFactory.getLogger("spi");
 
     static final String PROTOCOL_VERSION = "2.3.0";
+    static final String LIBRARY_VERSION = "2.3.4"; // TODO: generate this compile-time
 
     private static final long RECONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long TX_MONITOR_CHECK_FREQUENCY = TimeUnit.SECONDS.toMillis(1);
@@ -204,29 +200,7 @@ public class Spi {
      */
     @NotNull
     public static String getVersion() {
-        String bundleVersion = null;
-
-        // Retrieve 'Bundle-Version' from the manifest
-        Class<?> cl = Spi.class;
-        String classPath = cl.getResource(cl.getSimpleName() + ".class").toString();
-        if (classPath.startsWith("jar:")) {
-            // Keep going only if within JAR
-            String libPath = classPath.substring(0, classPath.lastIndexOf("!"));
-            String filePath = libPath + "!/" + JarFile.MANIFEST_NAME;
-            try {
-                Manifest manifest = new Manifest(new URL(filePath).openStream());
-                Attributes attr = manifest.getMainAttributes();
-                bundleVersion = attr.getValue("Bundle-Version");
-            } catch (IOException ignored) {
-                LOG.warn("Unable to retrieve bundle version");
-            }
-        }
-
-        // Default to protocol version, if unavailable
-        if (bundleVersion == null) {
-            bundleVersion = PROTOCOL_VERSION + "-PROTOCOL";
-        }
-        return bundleVersion;
+        return LIBRARY_VERSION;
     }
 
     //endregion
