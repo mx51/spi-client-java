@@ -24,7 +24,6 @@ public class Spi {
     private static final Logger LOG = LoggerFactory.getLogger("spi");
 
     static final String PROTOCOL_VERSION = "2.3.0";
-    static final String LIBRARY_VERSION = "2.3.4"; // TODO: generate this compile-time
 
     private static final long RECONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long TX_MONITOR_CHECK_FREQUENCY = TimeUnit.SECONDS.toMillis(1);
@@ -200,7 +199,7 @@ public class Spi {
      */
     @NotNull
     public static String getVersion() {
-        return LIBRARY_VERSION;
+        return Config.VERSION;
     }
 
     //endregion
