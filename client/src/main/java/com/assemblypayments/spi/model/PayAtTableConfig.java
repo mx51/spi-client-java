@@ -8,6 +8,7 @@ import java.util.Map;
 
 public class PayAtTableConfig {
 
+    private boolean payAtTableEnabled;
     private boolean operatorIdEnabled;
     private boolean splitByAmountEnabled;
     private boolean equalSplitEnabled;
@@ -17,6 +18,14 @@ public class PayAtTableConfig {
     private String labelOperatorId;
     private String labelTableId;
     private List<String> allowedOperatorIds;
+
+    public boolean isPayAtTableEnabled() {
+        return payAtTableEnabled;
+    }
+
+    public void setPayAtTableEnabled(boolean payAtTableEnabled) {
+        this.payAtTableEnabled = payAtTableEnabled;
+    }
 
     public boolean isOperatorIdEnabled() {
         return operatorIdEnabled;
@@ -100,7 +109,7 @@ public class PayAtTableConfig {
 
     public Message toMessage(String messageId) {
         final Map<String, Object> data = new HashMap<String, Object>();
-        data.put("pay_at_table_enabled", true);
+        data.put("pay_at_table_enabled", payAtTableEnabled);
         data.put("operator_id_enabled", operatorIdEnabled);
         data.put("split_by_amount_enabled", splitByAmountEnabled);
         data.put("equal_split_enabled", equalSplitEnabled);
