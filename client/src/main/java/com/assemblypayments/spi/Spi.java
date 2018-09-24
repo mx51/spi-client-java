@@ -51,6 +51,8 @@ public class Spi {
     private EventHandler<TransactionFlowState> txFlowStateChangedHandler;
     private EventHandler<Secrets> secretsChangedHandler;
 
+    private PrintingResponseDelegate printingResponseDelegate;
+
     private Message mostRecentPingSent;
     private long mostRecentPingSentTime;
     private Message mostRecentPongReceived;
@@ -303,6 +305,10 @@ public class Spi {
         secretsChangedHandler = handler;
     }
 
+    public void setPrintingResponseDelegate(PrintingResponseDelegate printingResponseDelegate) {
+        this.printingResponseDelegate = printingResponseDelegate;
+    }
+
     private void statusChanged() {
         if (statusChangedHandler != null) {
             statusChangedHandler.onEvent(getCurrentStatus());
@@ -329,6 +335,10 @@ public class Spi {
 
     public SpiConfig getConfig() {
         return config;
+    }
+
+    public void printReceipt(String key, String payload) {
+        send(new PrintingRequest(key, payload).toMessage());
     }
 
     //endregion
@@ -1205,6 +1215,47 @@ public class Spi {
         }
     }
 
+    /**
+     * When the transaction cancel response is returned.
+     */
+    private void handleCancelTransactionResponse(@NotNull Message m) {
+        synchronized (txLock) {
+            if (isTxResponseUnexpected(m, "Cancel", true)) return;
+
+            final TransactionFlowState txState = getCurrentTxFlowState();
+            final CancelTransactionResponse response = new CancelTransactionResponse(m);
+
+            if (response.isSuccess()) return;
+
+            LOG.warn("Failed to cancel transaction: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
+
+            txState.cancelFailed("Failed to cancel transaction: " + response.getErrorDetail() + ". Check EFTPOS.");
+
+            txFlowStateChanged();
+        }
+    }
+
+    /**
+     * When the result response for the POS info is returned.
+     */
+    private void handleSetPosInfoResponse(@NotNull Message m) {
+        synchronized (txLock) {
+            final SetPosInfoResponse response = new SetPosInfoResponse(m);
+
+            if (response.isSuccess()) {
+                this.hasSetInfo = true;
+                LOG.info("Setting POS info successful");
+            } else {
+                LOG.warn("Setting POS info failed: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
+            }
+        }
+    }
+
+    private void handlePrintingResponse(@NotNull Message m) {
+        assert printingResponseDelegate != null;
+        printingResponseDelegate.printingResponse(m);
+    }
+
     //endregion
 
     //region Internals for connection management
@@ -1523,6 +1574,8 @@ public class Spi {
             if (spiPat != null) {
                 spiPat.handleBillPaymentAdvice(m);
             }
+        } else if (Events.PRINTING_RESPONSE.equals(eventName)) {
+            handlePrintingResponse(m);
         } else if (Events.ERROR.equals(eventName)) {
             handleErrorEvent(m);
         } else if (Events.INVALID_HMAC_SIGNATURE.equals(eventName)) {
@@ -1603,39 +1656,7 @@ public class Spi {
 
     }
 
-    /**
-     * When the transaction cancel response is returned.
-     */
-    private void handleCancelTransactionResponse(@NotNull Message m) {
-        synchronized (txLock) {
-            if (isTxResponseUnexpected(m, "Cancel", true)) return;
-
-            final TransactionFlowState txState = getCurrentTxFlowState();
-            final CancelTransactionResponse response = new CancelTransactionResponse(m);
-
-            if (response.isSuccess()) return;
-
-            LOG.warn("Failed to cancel transaction: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
-
-            txState.cancelFailed("Failed to cancel transaction: " + response.getErrorDetail() + ". Check EFTPOS.");
-
-            txFlowStateChanged();
-        }
-    }
-
-    /**
-     * When the result response for the POS info is returned.
-     */
-    private void handleSetPosInfoResponse(@NotNull Message m) {
-        synchronized (txLock) {
-            final SetPosInfoResponse response = new SetPosInfoResponse(m);
-
-            if (response.isSuccess()) {
-                this.hasSetInfo = true;
-                LOG.info("Setting POS info successful");
-            } else {
-                LOG.warn("Setting POS info failed: reason=" + response.getErrorReason() + ", detail=" + response.getErrorDetail());
-            }
-        }
+    public interface PrintingResponseDelegate {
+        void printingResponse(Message message);
     }
 }

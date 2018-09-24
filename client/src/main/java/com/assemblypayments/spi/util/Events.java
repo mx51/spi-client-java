@@ -86,6 +86,9 @@ public final class Events {
     public static final String PREAUTH_COMPLETE_REQUEST = "completion";
     public static final String PREAUTH_COMPLETE_RESPONSE = "completion_response";
 
+    public static final String PRINTING_REQUEST = "print";
+    public static final String PRINTING_RESPONSE = "print_response";
+
     //endregion
 
     private Events() {
