@@ -23,7 +23,7 @@ public class Spi {
 
     private static final Logger LOG = LoggerFactory.getLogger("spi");
 
-    static final String PROTOCOL_VERSION = "2.3.0";
+    static final String PROTOCOL_VERSION = "2.4.0";
 
     private static final long RECONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long TX_MONITOR_CHECK_FREQUENCY = TimeUnit.SECONDS.toMillis(1);
@@ -52,6 +52,8 @@ public class Spi {
     private EventHandler<Secrets> secretsChangedHandler;
 
     private PrintingResponseDelegate printingResponseDelegate;
+    private TerminalStatusResponseDelegate terminalStatusResponseDelegate;
+    private BatteryLevelChangedDelegate batteryLevelChangedDelegate;
 
     private Message mostRecentPingSent;
     private long mostRecentPingSentTime;
@@ -309,6 +311,14 @@ public class Spi {
         this.printingResponseDelegate = printingResponseDelegate;
     }
 
+    public void setTerminalStatusResponseDelegate(TerminalStatusResponseDelegate terminalStatusResponseDelegate) {
+        this.terminalStatusResponseDelegate = terminalStatusResponseDelegate;
+    }
+
+    public void setBatteryLevelChangedDelegate(BatteryLevelChangedDelegate batteryLevelChangedDelegate) {
+        this.batteryLevelChangedDelegate = batteryLevelChangedDelegate;
+    }
+
     private void statusChanged() {
         if (statusChangedHandler != null) {
             statusChangedHandler.onEvent(getCurrentStatus());
@@ -340,6 +350,11 @@ public class Spi {
     public void printReceipt(String key, String payload) {
         send(new PrintingRequest(key, payload).toMessage());
     }
+
+    public void getTerminalStatus() {
+        send(new TerminalStatusRequest().toMessage());
+    }
+
 
     //endregion
 
@@ -1256,6 +1271,16 @@ public class Spi {
         printingResponseDelegate.printingResponse(m);
     }
 
+    private void handleTerminalStatusResponse(@NotNull Message m) {
+        assert terminalStatusResponseDelegate != null;
+        terminalStatusResponseDelegate.terminalStatusResponse(m);
+    }
+
+    private void handleBatteryLevelChanged(@NotNull Message m) {
+        assert batteryLevelChangedDelegate != null;
+        batteryLevelChangedDelegate.batteryLevelChanged(m);
+    }
+
     //endregion
 
     //region Internals for connection management
@@ -1576,6 +1601,10 @@ public class Spi {
             }
         } else if (Events.PRINTING_RESPONSE.equals(eventName)) {
             handlePrintingResponse(m);
+        } else if (Events.TERMINAL_STATUS_RESPONSE.equals(eventName)) {
+            handleTerminalStatusResponse(m);
+        } else if (Events.BATTERY_LEVEL_CHANGED.equals(eventName)) {
+            handleBatteryLevelChanged(m);
         } else if (Events.ERROR.equals(eventName)) {
             handleErrorEvent(m);
         } else if (Events.INVALID_HMAC_SIGNATURE.equals(eventName)) {
@@ -1658,5 +1687,13 @@ public class Spi {
 
     public interface PrintingResponseDelegate {
         void printingResponse(Message message);
+    }
+
+    public interface TerminalStatusResponseDelegate {
+        void terminalStatusResponse(Message message);
+    }
+
+    public interface BatteryLevelChangedDelegate {
+        void batteryLevelChanged(Message message);
     }
 }

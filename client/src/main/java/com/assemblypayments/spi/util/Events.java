@@ -89,6 +89,11 @@ public final class Events {
     public static final String PRINTING_REQUEST = "print";
     public static final String PRINTING_RESPONSE = "print_response";
 
+    public static final String TERMINAL_STATUS_REQUEST = "get_terminal_status";
+    public static final String TERMINAL_STATUS_RESPONSE = "terminal_status";
+
+    public static final String BATTERY_LEVEL_CHANGED = "battery_level_changed";
+
     //endregion
 
     private Events() {
