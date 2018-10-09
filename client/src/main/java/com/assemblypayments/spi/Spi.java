@@ -1266,15 +1266,15 @@ public class Spi {
         }
     }
 
-    private void handlePrintingResponse(@NotNull Message m) {
+    private void handlePrintingResponse(Message m) {
         printingResponseDelegate.printingResponse(m);
     }
 
-    private void handleTerminalStatusResponse(@NotNull Message m) {
+    private void handleTerminalStatusResponse(Message m) {
         terminalStatusResponseDelegate.terminalStatusResponse(m);
     }
 
-    private void handleBatteryLevelChanged(@NotNull Message m) {
+    private void handleBatteryLevelChanged(Message m) {
         batteryLevelChangedDelegate.batteryLevelChanged(m);
     }
 
