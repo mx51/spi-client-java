@@ -1267,17 +1267,14 @@ public class Spi {
     }
 
     private void handlePrintingResponse(@NotNull Message m) {
-        assert printingResponseDelegate != null;
         printingResponseDelegate.printingResponse(m);
     }
 
     private void handleTerminalStatusResponse(@NotNull Message m) {
-        assert terminalStatusResponseDelegate != null;
         terminalStatusResponseDelegate.terminalStatusResponse(m);
     }
 
     private void handleBatteryLevelChanged(@NotNull Message m) {
-        assert batteryLevelChangedDelegate != null;
         batteryLevelChangedDelegate.batteryLevelChanged(m);
     }
 

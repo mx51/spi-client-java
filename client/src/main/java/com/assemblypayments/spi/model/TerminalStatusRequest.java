@@ -9,12 +9,11 @@ import java.util.Map;
 
 public class TerminalStatusRequest {
 
-    public TerminalStatusRequest() { }
-
     @NotNull
     public Message toMessage() {
         final Map<String, Object> data = new HashMap<String, Object>();
 
         return new Message(RequestIdHelper.id("trmnl"), Events.TERMINAL_STATUS_REQUEST, data, true);
     }
+
 }
