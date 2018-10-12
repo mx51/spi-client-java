@@ -516,6 +516,23 @@ public class Spi {
      * @param tipAmount        The Tip Amount in cents.
      * @param cashoutAmount    The cashout Amount in cents.
      * @param promptForCashout Whether to prompt your customer for cashout on the EFTPOS.
+     * @return Initiation result {@link InitiateTxResult}.
+     */
+    @NotNull
+    public InitiateTxResult initiatePurchaseTx(String posRefId, int purchaseAmount, int tipAmount, int cashoutAmount, boolean promptForCashout) {
+        return initiatePurchaseTx(posRefId, purchaseAmount, tipAmount, cashoutAmount, promptForCashout, null);
+    }
+
+    /**
+     * Initiates a purchase transaction.
+     * <p>
+     * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} to get updates on the process.
+     *
+     * @param posRefId         Alphanumeric identifier for your purchase.
+     * @param purchaseAmount   Amount in cents to charge.
+     * @param tipAmount        The Tip Amount in cents.
+     * @param cashoutAmount    The cashout Amount in cents.
+     * @param promptForCashout Whether to prompt your customer for cashout on the EFTPOS.
      * @param options          Additional options applied on per-transaction basis.
      * @return Initiation result {@link InitiateTxResult}.
      */
