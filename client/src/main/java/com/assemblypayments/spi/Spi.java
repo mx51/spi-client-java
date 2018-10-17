@@ -136,7 +136,7 @@ public class Spi {
         if (StringUtils.isBlank(posVendorId) || StringUtils.isBlank(posVersion)) {
             // POS information is now required to be set
             LOG.warn("Missing POS vendor ID and version. posVendorId and posVersion are required before starting");
-            return;
+            throw new IllegalArgumentException("Missing POS vendor ID and version. posVendorId and posVersion are required before starting");
         }
 
         reconnectExecutor = new ScheduledThreadPoolExecutor(5);
