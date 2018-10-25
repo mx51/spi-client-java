@@ -20,6 +20,10 @@ public class GetLastTransactionResponse {
         return !StringUtils.isEmpty(getResponseCode());
     }
 
+    public boolean wasTimeOutOfSyncError() {
+        return m.getError().startsWith("TIME_OUT_OF_SYNC");
+    }
+
     public boolean wasOperationInProgressError() {
         return m.getError().startsWith("OPERATION_IN_PROGRESS");
     }
