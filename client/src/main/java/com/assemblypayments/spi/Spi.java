@@ -1111,6 +1111,7 @@ public class Spi {
             LOG.info("Got last transaction..");
             txState.gotGltResponse();
             GetLastTransactionResponse gltResponse = new GetLastTransactionResponse(m);
+            txState.setGltResponsePosRefId(gltResponse.getPosRefId());
             if (!gltResponse.wasRetrievedSuccessfully()) {
                 if (gltResponse.isStillInProgress(txState.getPosRefId())) {
                     // TH-4E - Operation In Progress
@@ -1131,6 +1132,12 @@ public class Spi {
                         // No need to publish txFlowStateChanged. Can return;
                         return;
                     }
+                } else if (gltResponse.wasTimeOutOfSyncError()) {
+                    // Let's not give up based on a TOOS error.
+                    // Let's log it, and ignore it.
+                    LOG.info("Time-Out-Of-Sync error in Get Last Transaction response. Let's ignore it and we'll try again.");
+                    // No need to publish txFlowStateChanged. Can return;
+                    return;
                 } else {
                     // TH-4X - Unexpected response when recovering
                     LOG.info("Unexpected Response in get last transaction during - received posRefId:" + gltResponse.getPosRefId() + " error:" + m.getError());

@@ -23,6 +23,7 @@ public class TransactionFlowState {
     private long cancelAttemptTime;
     private Message request;
     private boolean awaitingGltResponse;
+    private String gltResponsePosRefId;
 
     public TransactionFlowState(String posRefId, TransactionType type, int amountCents, Message message, String msg) {
         this.posRefId = posRefId;
@@ -53,7 +54,7 @@ public class TransactionFlowState {
         this.attemptingToCancel = false;
         this.displayMessage = msg;
     }
-    
+
     public void callingGlt() {
         this.awaitingGltResponse = true;
         this.lastStateRequestTime = System.currentTimeMillis();
@@ -398,4 +399,17 @@ public class TransactionFlowState {
         this.awaitingGltResponse = awaitingGltResponse;
     }
 
+    /**
+     *The pos ref id  when Get Last Transaction response. The pos ref id  when Get Last Transaction response.
+     */
+    public String getGltResponsePosRefId() {
+        return gltResponsePosRefId;
+    }
+
+    /**
+     * @param gltResponsePosRefId The gltResponsePosRefId given to this transaction.
+     */
+    public void setGltResponsePosRefId(String gltResponsePosRefId) {
+        this.gltResponsePosRefId = gltResponsePosRefId;
+    }
 }
