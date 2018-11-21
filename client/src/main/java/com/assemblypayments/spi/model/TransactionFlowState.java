@@ -12,6 +12,7 @@ public class TransactionFlowState {
     private boolean requestSent;
     private long requestTime;
     private long lastStateRequestTime;
+    private String lastGltRequestId;
     private boolean attemptingToCancel;
     private boolean awaitingSignatureCheck;
     private boolean awaitingPhoneForAuth;
@@ -23,6 +24,7 @@ public class TransactionFlowState {
     private long cancelAttemptTime;
     private Message request;
     private boolean awaitingGltResponse;
+    private String gltResponsePosRefId;
 
     public TransactionFlowState(String posRefId, TransactionType type, int amountCents, Message message, String msg) {
         this.posRefId = posRefId;
@@ -53,10 +55,11 @@ public class TransactionFlowState {
         this.attemptingToCancel = false;
         this.displayMessage = msg;
     }
-    
-    public void callingGlt() {
+
+    public void callingGlt(String gltRequestId) {
         this.awaitingGltResponse = true;
         this.lastStateRequestTime = System.currentTimeMillis();
+        this.lastGltRequestId = gltRequestId;
     }
 
     public void gotGltResponse() {
@@ -233,6 +236,21 @@ public class TransactionFlowState {
     }
 
     /**
+     * @return The id of the last glt request message that was sent. used to match with the response.
+     */
+    public String getLastGltRequestId() {
+        return lastGltRequestId;
+    }
+
+    /**
+     * @param lastGltRequestId The id of the last glt request message that was sent. used to match with the response.
+     */
+    public void setLastGltRequestId(String lastGltRequestId) {
+        this.lastGltRequestId = lastGltRequestId;
+    }
+
+
+    /**
      * @return Whether we're currently attempting to Cancel the transaction.
      */
     public boolean isAttemptingToCancel() {
@@ -398,4 +416,17 @@ public class TransactionFlowState {
         this.awaitingGltResponse = awaitingGltResponse;
     }
 
+    /**
+     * The pos ref id  when Get Last Transaction response. The pos ref id  when Get Last Transaction response.
+     */
+    public String getGltResponsePosRefId() {
+        return gltResponsePosRefId;
+    }
+
+    /**
+     * @param gltResponsePosRefId The gltResponsePosRefId given to this transaction.
+     */
+    public void setGltResponsePosRefId(String gltResponsePosRefId) {
+        this.gltResponsePosRefId = gltResponsePosRefId;
+    }
 }

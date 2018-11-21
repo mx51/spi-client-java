@@ -24,6 +24,7 @@ public class SpiPayAtTable {
         this.spi = spi;
 
         config = new PayAtTableConfig();
+        config.setPayAtTableEnabled(true);
         config.setOperatorIdEnabled(true);
         config.setAllowedOperatorIds(new ArrayList<String>());
         config.setEqualSplitEnabled(true);

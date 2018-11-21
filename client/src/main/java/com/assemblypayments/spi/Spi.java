@@ -983,6 +983,8 @@ public class Spi {
                     message.getId(), TransactionType.GET_LAST_TRANSACTION, 0, message,
                     "Waiting for EFTPOS connection to make a Get-Last-Transaction request"));
 
+            getCurrentTxFlowState().callingGlt(message.getId());
+
             if (send(message)) {
                 getCurrentTxFlowState().sent("Asked EFTPOS to Get Last Transaction.");
             }
@@ -1310,7 +1312,17 @@ public class Spi {
         synchronized (txLock) {
             TransactionFlowState txState = getCurrentTxFlowState();
             if (getCurrentFlow() != SpiFlow.TRANSACTION || txState.isFinished()) {
-                // We were not in the middle of a transaction, who cares?
+                LOG.info("Received glt response but we were not in the middle of a tx. ignoring.");
+                return;
+            }
+
+            if (!getCurrentTxFlowState().isAwaitingGltResponse()) {
+                LOG.info("received a glt response but we had not asked for one within this transaction. Perhaps leftover from previous one. ignoring.");
+                return;
+            }
+
+            if (!getCurrentTxFlowState().getLastGltRequestId().equals(m.getId())) {
+                LOG.info("received a glt response but the message id does not match the glt request that we sent. strange. ignoring.");
                 return;
             }
 
@@ -1319,6 +1331,7 @@ public class Spi {
             LOG.info("Got last transaction..");
             txState.gotGltResponse();
             GetLastTransactionResponse gltResponse = new GetLastTransactionResponse(m);
+            txState.setGltResponsePosRefId(gltResponse.getPosRefId());
             if (!gltResponse.wasRetrievedSuccessfully()) {
                 if (gltResponse.isStillInProgress(txState.getPosRefId())) {
                     // TH-4E - Operation In Progress
@@ -1339,6 +1352,12 @@ public class Spi {
                         // No need to publish txFlowStateChanged. Can return;
                         return;
                     }
+                } else if (gltResponse.wasTimeOutOfSyncError()) {
+                    // Let's not give up based on a TOOS error.
+                    // Let's log it, and ignore it.
+                    LOG.info("Time-Out-Of-Sync error in Get Last Transaction response. Let's ignore it and we'll try again.");
+                    // No need to publish txFlowStateChanged. Can return;
+                    return;
                 } else {
                     // TH-4X - Unexpected response when recovering
                     LOG.info("Unexpected Response in get last transaction during - received posRefId:" + gltResponse.getPosRefId() + " error:" + m.getError());
@@ -1387,7 +1406,6 @@ public class Spi {
                             } else if (txState.isRequestSent() && System.currentTimeMillis() > txState.getLastStateRequestTime() + CHECK_ON_TX_FREQUENCY) {
                                 // TH-1T, TH-4T - It's been a while since we received an update, let's call a GLT
                                 LOG.info("Checking on our transaction. Last we asked was at " + txState.getLastStateRequestTime() + "...");
-                                txState.callingGlt();
                                 callGetLastTransaction();
                             }
                         }
@@ -1657,7 +1675,6 @@ public class Spi {
                 if (getCurrentTxFlowState().isRequestSent()) {
                     // TH-3A - We've just reconnected and were in the middle of Tx.
                     // Let's get the last transaction to check what we might have missed out on.
-                    getCurrentTxFlowState().callingGlt();
                     callGetLastTransaction();
                 } else {
                     // TH-3AR - We had not even sent the request yet. Let's do that now
@@ -1724,8 +1741,9 @@ public class Spi {
      * Ask the PIN pad to tell us what the most recent transaction was.
      */
     private void callGetLastTransaction() {
-        final GetLastTransactionRequest gltRequest = new GetLastTransactionRequest();
-        send(gltRequest.toMessage());
+        final Message gltMessage = new GetLastTransactionRequest().toMessage();
+        getCurrentTxFlowState().callingGlt(gltMessage.getId());
+        send(gltMessage);
     }
 
     /**
