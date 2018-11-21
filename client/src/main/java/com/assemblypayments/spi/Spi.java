@@ -9,10 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.websocket.DeploymentException;
+import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * SPI integration client, used to manage connection to the terminal.
@@ -34,6 +33,11 @@ public class Spi {
 
     private String posId;
     private String eftposAddress;
+    private String serialNumber;
+    private String deviceApiKey;
+    private String acquirerCode;
+    private boolean inTestMode;
+    private boolean autoAddressResolutionEnabled;
     private Secrets secrets;
     private MessageStamp spiMessageStamp;
     private String posVendorId;
@@ -46,24 +50,29 @@ public class Spi {
     private SpiFlow currentFlow;
     private PairingFlowState currentPairingFlowState;
     private TransactionFlowState currentTxFlowState;
+    private DeviceAddressStatus currentDeviceStatus;
     private EventHandler<SpiStatus> statusChangedHandler;
     private EventHandler<PairingFlowState> pairingFlowStateChangedHandler;
     private EventHandler<TransactionFlowState> txFlowStateChangedHandler;
     private EventHandler<Secrets> secretsChangedHandler;
+    private EventHandler<DeviceAddressStatus> deviceAddressChangedHandler;
 
     private PrintingResponseDelegate printingResponseDelegate;
     private TerminalStatusResponseDelegate terminalStatusResponseDelegate;
     private BatteryLevelChangedDelegate batteryLevelChangedDelegate;
+    private TerminalConfigurationResponseDelegate terminalConfigurationResponseDelegate;
 
     private Message mostRecentPingSent;
     private long mostRecentPingSentTime;
     private Message mostRecentPongReceived;
     private int missedPongsCount;
+    private int retriesSinceLastDeviceAddressResolution = 0;
     private Thread periodicPingThread;
     private Thread transactionMonitoringThread;
 
     private final Object txLock = new Object();
     private final long missedPongsToDisconnect = 2;
+    private final int retriesBeforeResolvingDeviceAddress = 5;
 
     private SpiPayAtTable spiPat;
 
@@ -89,7 +98,7 @@ public class Spi {
      * @throws CompatibilityException Thrown if JDK compatibility check has been failed. Includes cause exception
      *                                explained in document for {@link Crypto#checkCompatibility()}.
      */
-    public Spi(@NotNull String posId, @NotNull String eftposAddress, @Nullable Secrets secrets)
+    public Spi(@NotNull String posId, @NotNull String serialNumber, @NotNull String eftposAddress, @Nullable Secrets secrets)
             throws CompatibilityException {
 
         try {
@@ -102,6 +111,7 @@ public class Spi {
         this.posId = posId;
         this.eftposAddress = "ws://" + eftposAddress;
         this.secrets = secrets;
+        this.serialNumber = serialNumber;
 
         // Default state
         currentStatus = SpiStatus.UNPAIRED;
@@ -158,6 +168,72 @@ public class Spi {
             LOG.info("Starting in unpaired state");
             currentStatus = SpiStatus.UNPAIRED;
         }
+    }
+
+    /**
+     * Set the acquirer code of your bank, please contact Assembly's Integration Engineers for acquirer code.
+     */
+    public boolean setAcquirerCode(String acquirerCode) {
+        this.acquirerCode = acquirerCode;
+        return true;
+    }
+
+    /**
+     * Set the api key used for auto address discovery feature, please contact Assembly's Integration Engineers for Api key.
+     */
+    public boolean setDeviceApiKey(String deviceApiKey) {
+        this.deviceApiKey = deviceApiKey;
+        return true;
+    }
+
+    /**
+     * Allows you to set the serial number of the Eftpos
+     */
+    public boolean setSerialNumber(String serialNumber) throws Exception {
+        if (getCurrentStatus() != SpiStatus.UNPAIRED)
+            return false;
+
+        String was = this.serialNumber;
+        this.serialNumber = serialNumber;
+        if (autoAddressResolutionEnabled && hasSerialNumberChanged(was))
+            autoResolveEftposAddress();
+
+        return true;
+    }
+
+    /**
+     * Allows you to set the auto address discovery feature.
+     */
+    public boolean setAutoAddressResolution(boolean autoAddressResolutionEnable) throws Exception {
+        if (getCurrentStatus() == SpiStatus.PAIRED_CONNECTED)
+            return false;
+
+        boolean was = this.autoAddressResolutionEnabled;
+        this.autoAddressResolutionEnabled = autoAddressResolutionEnable;
+        if (autoAddressResolutionEnable && !was) {
+            // we're turning it on
+            autoResolveEftposAddress();
+        }
+
+        return true;
+    }
+
+    /**
+     * Call this method to set the client library test mode.
+     * Set it to true only while you are developing the integration.
+     * It defaults to false. For a real merchant, always leave it set to false.
+     */
+    public boolean setTestMode(boolean testMode) throws Exception {
+        if (getCurrentStatus() != SpiStatus.UNPAIRED)
+            return false;
+
+        if (testMode == inTestMode)
+            return true;
+
+        // we're changing mode
+        inTestMode = testMode;
+        autoResolveEftposAddress();
+        return true;
     }
 
     /**
@@ -276,6 +352,14 @@ public class Spi {
         currentTxFlowState = state;
     }
 
+    public DeviceAddressStatus getCurrentDeviceStatus() {
+        return currentDeviceStatus;
+    }
+
+    private void setCurrentDeviceStatus(DeviceAddressStatus state) {
+        currentDeviceStatus = state;
+    }
+
     /**
      * Subscribe to this event to know when the status has changed.
      */
@@ -307,6 +391,13 @@ public class Spi {
         secretsChangedHandler = handler;
     }
 
+    /**
+     * Subscribe to this event when you want to know if the address of the device have changed
+     */
+    public void setDeviceAddressChangedHandler(@Nullable EventHandler<DeviceAddressStatus> handler) {
+        deviceAddressChangedHandler = handler;
+    }
+
     public void setPrintingResponseDelegate(PrintingResponseDelegate printingResponseDelegate) {
         this.printingResponseDelegate = printingResponseDelegate;
     }
@@ -317,6 +408,10 @@ public class Spi {
 
     public void setBatteryLevelChangedDelegate(BatteryLevelChangedDelegate batteryLevelChangedDelegate) {
         this.batteryLevelChangedDelegate = batteryLevelChangedDelegate;
+    }
+
+    public void setTerminalConfigurationResponseDelegate(TerminalConfigurationResponseDelegate terminalConfigurationResponseDelegate) {
+        this.terminalConfigurationResponseDelegate = terminalConfigurationResponseDelegate;
     }
 
     private void statusChanged() {
@@ -343,6 +438,12 @@ public class Spi {
         }
     }
 
+    private void deviceStatusChanged(DeviceAddressStatus value) {
+        if (deviceAddressChangedHandler != null) {
+            deviceAddressChangedHandler.onEvent(value);
+        }
+    }
+
     public SpiConfig getConfig() {
         return config;
     }
@@ -355,6 +456,9 @@ public class Spi {
         send(new TerminalStatusRequest().toMessage());
     }
 
+    public void getTerminalConfiguration() {
+        send(new TerminalConfigurationRequest().toMessage());
+    }
 
     //endregion
 
@@ -503,7 +607,7 @@ public class Spi {
      */
     @NotNull
     public InitiateTxResult initiatePurchaseTx(String posRefId, int purchaseAmount) {
-        return initiatePurchaseTx(posRefId, purchaseAmount, 0, 0, false, null);
+        return initiatePurchaseTx(posRefId, purchaseAmount, 0, 0, false, null, 0);
     }
 
     /**
@@ -520,7 +624,7 @@ public class Spi {
      */
     @NotNull
     public InitiateTxResult initiatePurchaseTx(String posRefId, int purchaseAmount, int tipAmount, int cashoutAmount, boolean promptForCashout) {
-        return initiatePurchaseTx(posRefId, purchaseAmount, tipAmount, cashoutAmount, promptForCashout, null);
+        return initiatePurchaseTx(posRefId, purchaseAmount, tipAmount, cashoutAmount, promptForCashout, null, 0);
     }
 
     /**
@@ -538,6 +642,25 @@ public class Spi {
      */
     @NotNull
     public InitiateTxResult initiatePurchaseTx(String posRefId, int purchaseAmount, int tipAmount, int cashoutAmount, boolean promptForCashout, TransactionOptions options) {
+        return initiatePurchaseTx(posRefId, purchaseAmount, tipAmount, cashoutAmount, promptForCashout, options, 0);
+    }
+
+    /**
+     * Initiates a purchase transaction.
+     * <p>
+     * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} to get updates on the process.
+     *
+     * @param posRefId         Alphanumeric identifier for your purchase.
+     * @param purchaseAmount   Amount in cents to charge.
+     * @param tipAmount        The Tip Amount in cents.
+     * @param cashoutAmount    The cashout Amount in cents.
+     * @param promptForCashout Whether to prompt your customer for cashout on the EFTPOS.
+     * @param options          Additional options applied on per-transaction basis.
+     * @param surchargeAmount  The Surcharge Amount in cents.
+     * @return Initiation result {@link InitiateTxResult}.
+     */
+    @NotNull
+    public InitiateTxResult initiatePurchaseTx(String posRefId, int purchaseAmount, int tipAmount, int cashoutAmount, boolean promptForCashout, TransactionOptions options, int surchargeAmount) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         if (tipAmount > 0 && (cashoutAmount > 0 || promptForCashout))
@@ -547,7 +670,7 @@ public class Spi {
             if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
             setCurrentFlow(SpiFlow.TRANSACTION);
 
-            final PurchaseRequest request = PurchaseHelper.createPurchaseRequest(purchaseAmount, posRefId, tipAmount, cashoutAmount, promptForCashout);
+            final PurchaseRequest request = PurchaseHelper.createPurchaseRequest(purchaseAmount, posRefId, tipAmount, cashoutAmount, promptForCashout, surchargeAmount);
             request.setConfig(config);
             request.setOptions(options);
             final Message message = request.toMessage();
@@ -575,12 +698,27 @@ public class Spi {
      */
     @NotNull
     public InitiateTxResult initiateRefundTx(String posRefId, int refundAmount) {
+        return initiateRefundTx(posRefId, refundAmount, false);
+    }
+
+    /**
+     * Initiates a refund transaction.
+     * <p>
+     * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} to get updates on the process.
+     *
+     * @param posRefId                   Alphanumeric identifier for your refund.
+     * @param refundAmount               Amount in cents to charge.
+     * @param isSuppressMerchantPassword Merchant Password control in VAA
+     * @return Initiation result {@link InitiateTxResult}.
+     */
+    @NotNull
+    public InitiateTxResult initiateRefundTx(String posRefId, int refundAmount, boolean isSuppressMerchantPassword) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         synchronized (txLock) {
             if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
 
-            final RefundRequest request = PurchaseHelper.createRefundRequest(refundAmount, posRefId);
+            final RefundRequest request = PurchaseHelper.createRefundRequest(refundAmount, posRefId, isSuppressMerchantPassword);
             request.setConfig(config);
             final Message message = request.toMessage();
 
@@ -694,12 +832,27 @@ public class Spi {
      */
     @NotNull
     public InitiateTxResult initiateCashoutOnlyTx(String posRefId, int amountCents) {
+        return initiateCashoutOnlyTx(posRefId, amountCents, 0);
+    }
+
+    /**
+     * Initiates a cashout only transaction.
+     * <p>
+     * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} event to get updates on the process.
+     *
+     * @param posRefId        Alphanumeric identifier for your transaction.
+     * @param amountCents     Amount in cents to cash out.
+     * @param surchargeAmount Amount in cents to surcharge.
+     */
+    @NotNull
+    public InitiateTxResult initiateCashoutOnlyTx(String posRefId, int amountCents, int surchargeAmount) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         synchronized (txLock) {
             if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
 
             final CashoutOnlyRequest cashoutOnlyRequest = new CashoutOnlyRequest(amountCents, posRefId);
+            cashoutOnlyRequest.setSurchargeAmount(surchargeAmount);
             cashoutOnlyRequest.setConfig(config);
             final Message cashoutMsg = cashoutOnlyRequest.toMessage();
 
@@ -724,12 +877,25 @@ public class Spi {
      */
     @NotNull
     public InitiateTxResult initiateMotoPurchaseTx(String posRefId, int amountCents) {
+        return initiateMotoPurchaseTx(posRefId, amountCents, 0);
+    }
+
+    /**
+     * Initiates a Mail Order / Telephone Order Purchase Transaction.
+     *
+     * @param posRefId        Alphanumeric identifier for your transaction.
+     * @param amountCents     Amount in cents
+     * @param surchargeAmount Surcharge amount in cents.
+     */
+    @NotNull
+    public InitiateTxResult initiateMotoPurchaseTx(String posRefId, int amountCents, int surchargeAmount) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         synchronized (txLock) {
             if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
 
             final MotoPurchaseRequest request = new MotoPurchaseRequest(amountCents, posRefId);
+            request.setSurchargeAmount(surchargeAmount);
             request.setConfig(config);
             final Message message = request.toMessage();
 
@@ -1295,6 +1461,10 @@ public class Spi {
         batteryLevelChangedDelegate.batteryLevelChanged(m);
     }
 
+    private void handleTerminalConfigurationResponse(@NotNull Message m) {
+        terminalConfigurationResponseDelegate.terminalConfigurationResponse(m);
+    }
+
     //endregion
 
     //region Internals for connection management
@@ -1333,6 +1503,8 @@ public class Spi {
                 break;
 
             case CONNECTED:
+                retriesSinceLastDeviceAddressResolution = 0;
+
                 if (getCurrentFlow() == SpiFlow.PAIRING && getCurrentStatus() == SpiStatus.UNPAIRED) {
                     getCurrentPairingFlowState().setMessage("Requesting to pair...");
                     pairingFlowStateChanged();
@@ -1369,6 +1541,20 @@ public class Spi {
                         @Override
                         public void run() {
                             if (conn == null) return; // This means the instance has been disposed. Aborting.
+
+                            if (autoAddressResolutionEnabled) {
+                                if (retriesSinceLastDeviceAddressResolution >= retriesBeforeResolvingDeviceAddress) {
+                                    try {
+                                        autoResolveEftposAddress();
+                                    } catch (Exception e) {
+                                        LOG.error("Failed to connect to Auto IP Resolution Service", e);
+                                    }
+                                    retriesSinceLastDeviceAddressResolution = 0;
+                                } else {
+                                    retriesSinceLastDeviceAddressResolution += 1;
+                                }
+                            }
+
                             if (getCurrentStatus() != SpiStatus.UNPAIRED) {
                                 // This is non-blocking
                                 try {
@@ -1619,6 +1805,8 @@ public class Spi {
             handleTerminalStatusResponse(m);
         } else if (Events.BATTERY_LEVEL_CHANGED.equals(eventName)) {
             handleBatteryLevelChanged(m);
+        } else if (Events.TERMINAL_CONFIGURATION_RESPONSE.equals(eventName)) {
+            handleTerminalConfigurationResponse(m);
         } else if (Events.ERROR.equals(eventName)) {
             handleErrorEvent(m);
         } else if (Events.INVALID_HMAC_SIGNATURE.equals(eventName)) {
@@ -1642,6 +1830,56 @@ public class Spi {
             LOG.debug("Asked to send, but not connected: " + message.getDecryptedJson());
             return false;
         }
+    }
+
+    //endregion
+
+    //region Device Management
+
+    private boolean hasSerialNumberChanged(String updatedSerialNumber) {
+        return !serialNumber.equals(updatedSerialNumber);
+    }
+
+    private boolean hasEftposAddressChanged(String updatedEftposAddress) {
+        return !eftposAddress.equals(updatedEftposAddress);
+    }
+
+    private void autoResolveEftposAddress() throws IOException {
+        if (!autoAddressResolutionEnabled)
+            return;
+
+        if (serialNumber == null || StringUtils.isWhitespace(serialNumber))
+            return;
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    DeviceService service = new DeviceService();
+                    DeviceAddressStatus addressResponse = service.retrieveService(serialNumber, deviceApiKey, acquirerCode, inTestMode);
+
+                    if (addressResponse.getAddress() == null)
+                        return;
+
+
+                    if (!hasEftposAddressChanged(addressResponse.getAddress()))
+                        return;
+
+                    // update device and connection address
+                    eftposAddress = "ws://" + addressResponse.getAddress();
+                    conn.setAddress(eftposAddress);
+
+                    DeviceAddressStatus state = new DeviceAddressStatus();
+                    state.setAddress(addressResponse.getAddress());
+                    state.setLastUpdated(addressResponse.getLastUpdated());
+                    setCurrentDeviceStatus(state);
+
+                    deviceStatusChanged(getCurrentDeviceStatus());
+                } catch (IOException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+        }).start();
     }
 
     //endregion
@@ -1709,5 +1947,9 @@ public class Spi {
 
     public interface BatteryLevelChangedDelegate {
         void batteryLevelChanged(@NotNull Message message);
+    }
+
+    public interface TerminalConfigurationResponseDelegate {
+        void terminalConfigurationResponse(@NotNull Message message);
     }
 }

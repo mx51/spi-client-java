@@ -10,6 +10,8 @@ public class RefundRequest extends AbstractChargeRequest implements Message.Comp
 
     private final int refundAmount;
 
+    private boolean suppressMerchantPassword;
+
     public RefundRequest(int amountCents, String posRefId) {
         super(posRefId);
         this.refundAmount = amountCents;
@@ -35,10 +37,19 @@ public class RefundRequest extends AbstractChargeRequest implements Message.Comp
         return getRefundAmount();
     }
 
+    public void setSuppressMerchantPassword(boolean suppressMerchantPassword) {
+        this.suppressMerchantPassword = suppressMerchantPassword;
+    }
+
+    public boolean isSuppressMerchantPassword() {
+        return suppressMerchantPassword;
+    }
+
     @Override
     public Message toMessage() {
         final Map<String, Object> data = new HashMap<String, Object>();
         data.put("refund_amount", getRefundAmount());
+        data.put("suppress_merchant_password", isSuppressMerchantPassword());
         return toMessage(RequestIdHelper.id("refund"), Events.REFUND_REQUEST, data, true);
     }
 

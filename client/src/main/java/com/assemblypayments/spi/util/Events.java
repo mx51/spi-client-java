@@ -92,6 +92,9 @@ public final class Events {
     public static final String TERMINAL_STATUS_REQUEST = "get_terminal_status";
     public static final String TERMINAL_STATUS_RESPONSE = "terminal_status";
 
+    public static final String TERMINAL_CONFIGURATION_REQUEST = "get_terminal_configuration";
+    public static final String TERMINAL_CONFIGURATION_RESPONSE = "terminal_configuration";
+
     public static final String BATTERY_LEVEL_CHANGED = "battery_level_changed";
 
     //endregion

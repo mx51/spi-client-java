@@ -12,6 +12,7 @@ public class PurchaseRequest extends AbstractChargeRequest implements Message.Co
     private int tipAmount;
     private int cashoutAmount;
     private boolean promptForCashout;
+    private int surchargeAmount;
 
     public PurchaseRequest(int amountCents, String posRefId) {
         super(posRefId);
@@ -46,6 +47,15 @@ public class PurchaseRequest extends AbstractChargeRequest implements Message.Co
         this.promptForCashout = promptForCashout;
     }
 
+    public int getSurchargeAmount() {
+        return surchargeAmount;
+    }
+
+    public void setSurchargeAmount(int surchargeAmount) {
+        this.surchargeAmount = surchargeAmount;
+    }
+
+
     /**
      * @deprecated Use {@link #getPosRefId()} instead.
      */
@@ -63,10 +73,11 @@ public class PurchaseRequest extends AbstractChargeRequest implements Message.Co
     }
 
     public String amountSummary() {
-        return String.format("Purchase: %.2f; Tip: %.2f; Cashout: %.2f;",
+        return String.format("Purchase: %.2f; Tip: %.2f; Cashout: %.2f; Surcharge: %.2f;",
                 getPurchaseAmount() / 100.0,
                 getTipAmount() / 100.0,
-                getCashoutAmount() / 100.0);
+                getCashoutAmount() / 100.0,
+                getSurchargeAmount() / 100.0);
     }
 
     @Override
@@ -76,6 +87,7 @@ public class PurchaseRequest extends AbstractChargeRequest implements Message.Co
         data.put("tip_amount", getTipAmount());
         data.put("cash_amount", getCashoutAmount());
         data.put("prompt_for_cashout", isPromptForCashout());
+        data.put("surcharge_amount", getSurchargeAmount());
         return toMessage(RequestIdHelper.id("prchs"), Events.PURCHASE_REQUEST, data, true);
     }
 

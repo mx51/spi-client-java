@@ -64,7 +64,13 @@ public class SpiPreauth {
     }
 
     public InitiateTxResult initiateCompletionTx(String posRefId, String preauthId, int amountCents) {
-        Message msg = new PreauthCompletionRequest(preauthId, amountCents, posRefId).toMessage();
+        return initiateCompletionTx(posRefId, preauthId, amountCents, 0);
+    }
+
+    public InitiateTxResult initiateCompletionTx(String posRefId, String preauthId, int amountCents, int surchargeAmount) {
+        PreauthCompletionRequest request = new PreauthCompletionRequest(preauthId, amountCents, posRefId);
+        request.setSurchargeAmount(surchargeAmount);
+        Message msg = request.toMessage();
         TransactionFlowState tfs = new TransactionFlowState(
                 posRefId, TransactionType.PREAUTH, amountCents, msg,
                 String.format("Waiting for EFTPOS connection to make preauth completion request for %.2f", amountCents / 100.0));

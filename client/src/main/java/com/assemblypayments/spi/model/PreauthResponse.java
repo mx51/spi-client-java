@@ -80,4 +80,12 @@ public class PreauthResponse {
         return 0;
     }
 
+    public int getCompletionSurchargeAmount() {
+        final String txType = m.getDataStringValue("transaction_type");
+        if ("PCOMP".equals(txType)) {
+            return m.getDataIntValue("surcharge_amount");
+        }
+        return 0;
+    }
+
 }
