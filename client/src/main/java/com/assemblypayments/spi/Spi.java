@@ -448,7 +448,7 @@ public class Spi {
         return config;
     }
 
-    public void printReceipt(String key, String payload) {
+    public void printReport(String key, String payload) {
         send(new PrintingRequest(key, payload).toMessage());
     }
 
