@@ -9,9 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.websocket.DeploymentException;
-import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.concurrent.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * SPI integration client, used to manage connection to the terminal.
@@ -1862,7 +1863,7 @@ public class Spi {
         return !eftposAddress.equals(updatedEftposAddress);
     }
 
-    private void autoResolveEftposAddress() throws IOException {
+    private void autoResolveEftposAddress() {
         if (!autoAddressResolutionEnabled)
             return;
 
@@ -1872,30 +1873,28 @@ public class Spi {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                try {
-                    DeviceService service = new DeviceService();
-                    DeviceAddressStatus addressResponse = service.retrieveService(serialNumber, deviceApiKey, acquirerCode, inTestMode);
+                DeviceService service = new DeviceService();
+                DeviceAddressStatus addressResponse = service.retrieveService(serialNumber, deviceApiKey, acquirerCode, inTestMode);
 
-                    if (addressResponse.getAddress() == null)
-                        return;
+                if (addressResponse == null)
+                    return;
 
+                if (addressResponse.getAddress() == null)
+                    return;
 
-                    if (!hasEftposAddressChanged(addressResponse.getAddress()))
-                        return;
+                if (!hasEftposAddressChanged(addressResponse.getAddress()))
+                    return;
 
-                    // update device and connection address
-                    eftposAddress = "ws://" + addressResponse.getAddress();
-                    conn.setAddress(eftposAddress);
+                // update device and connection address
+                eftposAddress = "ws://" + addressResponse.getAddress();
+                conn.setAddress(eftposAddress);
 
-                    DeviceAddressStatus state = new DeviceAddressStatus();
-                    state.setAddress(addressResponse.getAddress());
-                    state.setLastUpdated(addressResponse.getLastUpdated());
-                    setCurrentDeviceStatus(state);
+                DeviceAddressStatus state = new DeviceAddressStatus();
+                state.setAddress(addressResponse.getAddress());
+                state.setLastUpdated(addressResponse.getLastUpdated());
+                setCurrentDeviceStatus(state);
 
-                    deviceStatusChanged(getCurrentDeviceStatus());
-                } catch (IOException e) {
-                    throw new IllegalArgumentException(e);
-                }
+                deviceStatusChanged(getCurrentDeviceStatus());
             }
         }).start();
     }
