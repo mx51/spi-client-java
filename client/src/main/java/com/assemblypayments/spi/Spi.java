@@ -132,6 +132,13 @@ public class Spi {
         return spiPat;
     }
 
+    public SpiPayAtTable disablePayAtTable()
+    {
+        spiPat = new SpiPayAtTable(this);
+        spiPat.getConfig().setPayAtTableEnabled(false);
+        return spiPat;
+    }
+
     public SpiPreauth enablePreauth() {
         spiPreauth = new SpiPreauth(this, txLock);
         return spiPreauth;
@@ -1361,8 +1368,8 @@ public class Spi {
                     return;
                 } else {
                     // TH-4X - Unexpected response when recovering
-                    LOG.info("Unexpected Response in get last transaction during - received posRefId:" + gltResponse.getPosRefId() + " error:" + m.getError());
-                    txState.unknownCompleted("Unexpected error when recovering transaction status. Check EFTPOS. ");
+                    LOG.info("Unexpected Response in get last transaction during - received posRefId:" + gltResponse.getPosRefId() + " error:" + m.getError() + ". Ignoring.");
+                    return;
                 }
             } else {
                 if (txState.getType() == TransactionType.GET_LAST_TRANSACTION) {
