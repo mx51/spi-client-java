@@ -256,12 +256,12 @@ public class Spi {
     }
 
     /**
-     * Allows you to set the PIN pad address. Sometimes the PIN pad might change IP address (we recommend
+     * Allows you to set the PIN pad address only if auto address is not enabled. Sometimes the PIN pad might change IP address (we recommend
      * reserving static IPs if possible). Either way you need to allow your User to enter the IP address
      * of the PIN pad.
      */
     public boolean setEftposAddress(String address) {
-        if (getCurrentStatus() == SpiStatus.PAIRED_CONNECTED) return false;
+        if ((getCurrentStatus() == SpiStatus.PAIRED_CONNECTED) || autoAddressResolutionEnabled) return false;
         eftposAddress = "ws://" + address;
         conn.setAddress(eftposAddress);
         return true;
