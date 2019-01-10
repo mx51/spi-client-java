@@ -25,7 +25,7 @@ public class Spi {
 
     static final String PROTOCOL_VERSION = "2.4.0";
 
-    private static final long RECONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    private static final long RECONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(3);
     private static final long TX_MONITOR_CHECK_FREQUENCY = TimeUnit.SECONDS.toMillis(1);
     private static final long CHECK_ON_TX_FREQUENCY = TimeUnit.SECONDS.toMillis(20);
     private static final long MAX_WAIT_FOR_CANCEL_TX = TimeUnit.SECONDS.toMillis(10);
