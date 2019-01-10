@@ -20,11 +20,13 @@ public final class DeviceService {
         StringBuilder response;
 
         try {
+            String envSuffix = "";
+
             if (isTestMode) {
-                deviceAddressUrl = "https://device-address-api-sb." + acquirerCode + ".msp.assemblypayments.com/v1/" + serialNumber + "/ip";
-            } else {
-                deviceAddressUrl = "https://device-address-api." + acquirerCode + ".msp.assemblypayments.com/v1/" + serialNumber + "/ip";
+                envSuffix = "-sb";
             }
+
+            deviceAddressUrl = String.format("https://device-address-api%s.%s.msp.assemblypayments.com/v1/%s/ip", envSuffix, acquirerCode, serialNumber);
 
             URL obj = new URL(deviceAddressUrl);
 

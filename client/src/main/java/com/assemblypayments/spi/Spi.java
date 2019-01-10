@@ -132,8 +132,7 @@ public class Spi {
         return spiPat;
     }
 
-    public SpiPayAtTable disablePayAtTable()
-    {
+    public SpiPayAtTable disablePayAtTable() {
         spiPat = new SpiPayAtTable(this);
         spiPat.getConfig().setPayAtTableEnabled(false);
         return spiPat;
@@ -181,25 +180,22 @@ public class Spi {
     /**
      * Set the acquirer code of your bank, please contact Assembly's Integration Engineers for acquirer code.
      */
-    public boolean setAcquirerCode(String acquirerCode) {
+    public void setAcquirerCode(String acquirerCode) {
         this.acquirerCode = acquirerCode;
-        return true;
     }
 
     /**
      * Set the api key used for auto address discovery feature, please contact Assembly's Integration Engineers for Api key.
      */
-    public boolean setDeviceApiKey(String deviceApiKey) {
+    public void setDeviceApiKey(String deviceApiKey) {
         this.deviceApiKey = deviceApiKey;
-        return true;
     }
 
     /**
      * Allows you to set the serial number of the Eftpos
      */
-    public boolean setSerialNumber(String serialNumber) throws Exception {
-        if (getCurrentStatus() != SpiStatus.UNPAIRED)
-            return false;
+    public boolean setSerialNumber(String serialNumber) {
+        if (getCurrentStatus() != SpiStatus.UNPAIRED) return false;
 
         String was = this.serialNumber;
         this.serialNumber = serialNumber;
@@ -212,9 +208,8 @@ public class Spi {
     /**
      * Allows you to set the auto address discovery feature.
      */
-    public boolean setAutoAddressResolution(boolean autoAddressResolutionEnable) throws Exception {
-        if (getCurrentStatus() == SpiStatus.PAIRED_CONNECTED)
-            return false;
+    public boolean setAutoAddressResolution(boolean autoAddressResolutionEnable) {
+        if (getCurrentStatus() == SpiStatus.PAIRED_CONNECTED) return false;
 
         boolean was = this.autoAddressResolutionEnabled;
         this.autoAddressResolutionEnabled = autoAddressResolutionEnable;
@@ -231,12 +226,10 @@ public class Spi {
      * Set it to true only while you are developing the integration.
      * It defaults to false. For a real merchant, always leave it set to false.
      */
-    public boolean setTestMode(boolean testMode) throws Exception {
-        if (getCurrentStatus() != SpiStatus.UNPAIRED)
-            return false;
+    public boolean setTestMode(boolean testMode) {
+        if (getCurrentStatus() != SpiStatus.UNPAIRED) return false;
 
-        if (testMode == inTestMode)
-            return true;
+        if (testMode == inTestMode) return true;
 
         // we're changing mode
         inTestMode = testMode;
@@ -261,7 +254,7 @@ public class Spi {
      * of the PIN pad.
      */
     public boolean setEftposAddress(String address) {
-        if ((getCurrentStatus() == SpiStatus.PAIRED_CONNECTED) || autoAddressResolutionEnabled) return false;
+        if (getCurrentStatus() == SpiStatus.PAIRED_CONNECTED || autoAddressResolutionEnabled) return false;
         eftposAddress = "ws://" + address;
         conn.setAddress(eftposAddress);
         return true;
@@ -1577,7 +1570,7 @@ public class Spi {
                                     }
                                     retriesSinceLastDeviceAddressResolution = 0;
                                 } else {
-                                    retriesSinceLastDeviceAddressResolution += 1;
+                                    retriesSinceLastDeviceAddressResolution ++;
                                 }
                             }
 
@@ -1871,11 +1864,9 @@ public class Spi {
     }
 
     private void autoResolveEftposAddress() {
-        if (!autoAddressResolutionEnabled)
-            return;
+        if (!autoAddressResolutionEnabled) return;
 
-        if (serialNumber == null || StringUtils.isWhitespace(serialNumber))
-            return;
+        if (serialNumber == null || StringUtils.isWhitespace(serialNumber)) return;
 
         new Thread(new Runnable() {
             @Override
@@ -1883,14 +1874,11 @@ public class Spi {
                 DeviceService service = new DeviceService();
                 DeviceAddressStatus addressResponse = service.retrieveService(serialNumber, deviceApiKey, acquirerCode, inTestMode);
 
-                if (addressResponse == null)
-                    return;
+                if (addressResponse == null) return;
 
-                if (addressResponse.getAddress() == null)
-                    return;
+                if (addressResponse.getAddress() == null) return;
 
-                if (!hasEftposAddressChanged(addressResponse.getAddress()))
-                    return;
+                if (!hasEftposAddressChanged(addressResponse.getAddress())) return;
 
                 // update device and connection address
                 eftposAddress = "ws://" + addressResponse.getAddress();
