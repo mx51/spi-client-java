@@ -6,7 +6,7 @@ plugins {
 archivesBaseName = property('project.name')
 version = property('project.version')
 
-sourceCompatibility = JavaVersion.VERSION_1_6
+sourceCompatibility = JavaVersion.VERSION_1_7
 
 ext {
     publishVendor = 'Assembly Payments'
@@ -29,6 +29,7 @@ dependencies {
     compile 'org.glassfish.tyrus.bundles:tyrus-standalone-client:1.13.1'
     compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'org.jetbrains:annotations:16.0.1'
+    compile 'com.squareup.okhttp3:okhttp:3.12.1'
 
     testCompile 'junit:junit:4.12'
 }

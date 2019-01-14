@@ -1,6 +1,8 @@
 package com.assemblypayments.spi;
 
 import com.assemblypayments.spi.model.*;
+import com.assemblypayments.spi.model.DeviceAddressStatus;
+import com.assemblypayments.spi.service.*;
 import com.assemblypayments.spi.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -1871,8 +1873,8 @@ public class Spi {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                DeviceService service = new DeviceService();
-                DeviceAddressStatus addressResponse = service.retrieveService(serialNumber, deviceApiKey, acquirerCode, inTestMode);
+                DeviceService deviceService = new DeviceService();
+                DeviceAddressStatus addressResponse = deviceService.retrieveService(serialNumber, deviceApiKey, acquirerCode, inTestMode);
 
                 if (addressResponse == null) return;
 
