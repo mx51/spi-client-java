@@ -1535,6 +1535,9 @@ public class Spi {
                     LOG.info("I'm connected to " + eftposAddress + "...");
                     spiMessageStamp.setSecrets(secrets);
                     startPeriodicPing();
+
+                    // Clean up timer
+                    cleanReconnectFuture();
                 }
                 break;
 
@@ -1565,14 +1568,10 @@ public class Spi {
 
                             if (autoAddressResolutionEnabled) {
                                 if (retriesSinceLastDeviceAddressResolution >= retriesBeforeResolvingDeviceAddress) {
-                                    try {
-                                        autoResolveEftposAddress();
-                                    } catch (Exception e) {
-                                        LOG.error("Failed to connect to Auto IP Resolution Service", e);
-                                    }
+                                    autoResolveEftposAddress();
                                     retriesSinceLastDeviceAddressResolution = 0;
                                 } else {
-                                    retriesSinceLastDeviceAddressResolution ++;
+                                    retriesSinceLastDeviceAddressResolution++;
                                 }
                             }
 
@@ -1914,8 +1913,13 @@ public class Spi {
 
         // Clean up connection
         conn.dispose();
+        conn = null;
 
         // Clean up timer
+        cleanReconnectFuture();
+    }
+
+    private void cleanReconnectFuture() {
         if (reconnectFuture != null) {
             reconnectFuture.cancel(true);
             reconnectFuture = null;
