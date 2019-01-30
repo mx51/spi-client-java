@@ -201,8 +201,10 @@ public class Spi {
 
         String was = this.serialNumber;
         this.serialNumber = serialNumber;
-        if (autoAddressResolutionEnabled && hasSerialNumberChanged(was))
+
+        if (autoAddressResolutionEnabled && hasSerialNumberChanged(was)) {
             autoResolveEftposAddress();
+        }
 
         return true;
     }

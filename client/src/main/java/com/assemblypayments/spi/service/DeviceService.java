@@ -12,31 +12,33 @@ public class DeviceService {
     private static final Logger LOG = LoggerFactory.getLogger("spi");
 
     public DeviceAddressStatus retrieveService(String serialNumber, String apiKey, String acquirerCode, boolean isTestMode) {
+        String envSuffix = "";
         String deviceAddressUrl;
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient okHttpClient = new OkHttpClient();
+        DeviceAddressStatus deviceAddressStatus = new DeviceAddressStatus();
+
+        if (isTestMode) {
+            envSuffix = "-sb";
+        }
+
+        deviceAddressUrl = String.format("https://device-address-api%s.%s.msp.assemblypayments.com/v1/%s/ip", envSuffix, acquirerCode, serialNumber);
 
         try {
-            String envSuffix = "";
-
-            if (isTestMode) {
-                envSuffix = "-sb";
-            }
-
-            deviceAddressUrl = String.format("https://device-address-api%s.%s.msp.assemblypayments.com/v1/%s/ip", envSuffix, acquirerCode, serialNumber);
-
-            String apiKeyHeader = "ASM-MSP-DEVICE-ADDRESS-API-KEY";
-
             Request request = new Request.Builder()
                     .url(deviceAddressUrl)
-                    .addHeader(apiKeyHeader, apiKey)
+                    .addHeader("ASM-MSP-DEVICE-ADDRESS-API-KEY", apiKey)
                     .build();
 
-            try (Response response = client.newCall(request).execute()) {
-                return new Gson().fromJson(response.body() != null ? response.body().string() : null, DeviceAddressStatus.class);
+            Response response = okHttpClient.newCall(request).execute();
+
+            if (response.body() != null) {
+                deviceAddressStatus = new Gson().fromJson(response.body().string(), DeviceAddressStatus.class);
             }
+
+            return deviceAddressStatus;
         } catch (IOException ex) {
             LOG.error("DeviceAddressStatus: " + ex.getMessage());
-            return null;
+            return deviceAddressStatus;
         }
     }
 }
