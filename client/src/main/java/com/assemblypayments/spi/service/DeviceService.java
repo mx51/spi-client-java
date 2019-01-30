@@ -10,11 +10,13 @@ import java.io.IOException;
 public class DeviceService {
 
     private static final Logger LOG = LoggerFactory.getLogger("spi");
+    private OkHttpClient okHttpClient = new OkHttpClient();
+    private Gson gson = new Gson();
 
     public DeviceAddressStatus retrieveService(String serialNumber, String apiKey, String acquirerCode, boolean isTestMode) {
         String envSuffix = "";
         String deviceAddressUrl;
-        OkHttpClient okHttpClient = new OkHttpClient();
+
         DeviceAddressStatus deviceAddressStatus = new DeviceAddressStatus();
 
         if (isTestMode) {
@@ -32,7 +34,7 @@ public class DeviceService {
             Response response = okHttpClient.newCall(request).execute();
 
             if (response.body() != null) {
-                deviceAddressStatus = new Gson().fromJson(response.body().string(), DeviceAddressStatus.class);
+                deviceAddressStatus = gson.fromJson(response.body().string(), DeviceAddressStatus.class);
             }
 
             return deviceAddressStatus;
