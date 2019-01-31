@@ -21,38 +21,43 @@ public class Pos {
 
     private void start() {
         try {
-            spi = new Spi(posId, eftposAddress, spiSecrets);
-            spi.setPosInfo("assembly", "2.3.0");
+            spi = new Spi(posId, "", eftposAddress, spiSecrets);
         } catch (Spi.CompatibilityException e) {
             System.out.println("# JDK compatibility check failed: " + e.getCause().getMessage());
             return;
         }
 
-        spi.setStatusChangedHandler(new Spi.EventHandler<SpiStatus>() {
-            @Override
-            public void onEvent(SpiStatus value) {
-                onStatusChanged();
-            }
-        });
-        spi.setSecretsChangedHandler(new Spi.EventHandler<Secrets>() {
-            @Override
-            public void onEvent(Secrets value) {
-                onSecretsChanged(value);
-            }
-        });
-        spi.setPairingFlowStateChangedHandler(new Spi.EventHandler<PairingFlowState>() {
-            @Override
-            public void onEvent(PairingFlowState value) {
-                onPairingFlowStateChanged(value);
-            }
-        });
-        spi.setTxFlowStateChangedHandler(new Spi.EventHandler<TransactionFlowState>() {
-            @Override
-            public void onEvent(TransactionFlowState value) {
-                onTxFlowStateChanged(value);
-            }
-        });
-        spi.start();
+        try {
+            spi.setPosInfo("assembly", "2.3.0");
+            spi.setStatusChangedHandler(new Spi.EventHandler<SpiStatus>() {
+                @Override
+                public void onEvent(SpiStatus value) {
+                    onStatusChanged();
+                }
+            });
+            spi.setSecretsChangedHandler(new Spi.EventHandler<Secrets>() {
+                @Override
+                public void onEvent(Secrets value) {
+                    onSecretsChanged(value);
+                }
+            });
+            spi.setPairingFlowStateChangedHandler(new Spi.EventHandler<PairingFlowState>() {
+                @Override
+                public void onEvent(PairingFlowState value) {
+                    onPairingFlowStateChanged(value);
+                }
+            });
+            spi.setTxFlowStateChangedHandler(new Spi.EventHandler<TransactionFlowState>() {
+                @Override
+                public void onEvent(TransactionFlowState value) {
+                    onTxFlowStateChanged(value);
+                }
+            });
+            spi.start();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return;
+        }
 
         // And Now we just accept user input and display to the user what is happening.
         SystemHelper.clearConsole();
