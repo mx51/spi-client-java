@@ -1562,12 +1562,12 @@ public class Spi {
                         }
                     }
 
+                    if (conn == null) return; // This means the instance has been disposed. Aborting.
+
                     LOG.info("Will try to reconnect in 5s...");
                     reconnectFuture = reconnectExecutor.scheduleAtFixedRate(new Runnable() {
                         @Override
                         public void run() {
-                            if (conn == null) return; // This means the instance has been disposed. Aborting.
-
                             if (autoAddressResolutionEnabled) {
                                 if (retriesSinceLastDeviceAddressResolution >= retriesBeforeResolvingDeviceAddress) {
                                     autoResolveEftposAddress();
