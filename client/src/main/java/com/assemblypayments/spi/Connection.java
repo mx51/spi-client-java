@@ -19,7 +19,7 @@ class Connection {
 
     private static final Logger LOG = LoggerFactory.getLogger("spi");
 
-    private static final long CONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(8);
+    private static final long CONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(4);
     private EventHandler eventHandler;
     private State state;
     private String address;

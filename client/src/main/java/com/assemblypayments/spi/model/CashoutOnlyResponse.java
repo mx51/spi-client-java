@@ -20,4 +20,7 @@ public class CashoutOnlyResponse extends AbstractChargeResponse {
         return m.getDataIntValue("bank_cash_amount");
     }
 
+    public int getSurchargeAmount() {
+        return m.getDataIntValue("surcharge_amount");
+    }
 }
