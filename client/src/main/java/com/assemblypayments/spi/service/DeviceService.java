@@ -14,6 +14,11 @@ public class DeviceService {
     private Gson gson = new Gson();
 
     public DeviceAddressStatus retrieveService(String serialNumber, String apiKey, String acquirerCode, boolean isTestMode) {
+        if (apiKey == null) {
+            LOG.error("DeviceApiKey must not be null");
+            throw new IllegalArgumentException("DeviceApiKey must not be null");
+        }
+
         String envSuffix = "";
         String deviceAddressUrl;
 
