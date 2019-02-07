@@ -1562,7 +1562,7 @@ public class Spi {
                         }
                     }
 
-                    if (conn == null) return; // This means the instance has been disposed. Aborting.
+                    if (conn == null || reconnectExecutor == null) return; // This means the instance has been disposed. Aborting.
 
                     LOG.info("Will try to reconnect in 5s...");
                     reconnectFuture = reconnectExecutor.scheduleAtFixedRate(new Runnable() {
