@@ -202,7 +202,7 @@ public class Spi {
         String was = this.serialNumber;
         this.serialNumber = serialNumber;
 
-        if (autoAddressResolutionEnabled && hasSerialNumberChanged(was)) {
+        if (hasSerialNumberChanged(was)) {
             autoResolveEftposAddress();
         }
 
@@ -1869,7 +1869,10 @@ public class Spi {
     private void autoResolveEftposAddress() {
         if (!autoAddressResolutionEnabled) return;
 
-        if (serialNumber == null || StringUtils.isWhitespace(serialNumber)) return;
+        if (serialNumber == null || StringUtils.isWhitespace(serialNumber) || deviceApiKey == null || StringUtils.isWhitespace(deviceApiKey)) {
+            LOG.error("Missing serialNumber and/or deviceApiKey. Need to set them before for Auto Address to work.");
+            return;
+        }
 
         new Thread(new Runnable() {
             @Override
