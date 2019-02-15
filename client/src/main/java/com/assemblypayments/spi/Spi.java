@@ -1562,10 +1562,15 @@ public class Spi {
                         }
                     }
 
-                    if (conn == null || reconnectExecutor == null) return; // This means the instance has been disposed. Aborting.
-
+                    if (conn == null) return; // This means the instance has been disposed. Aborting.
+                    if (reconnectExecutor == null) {
+                        LOG.warn("reconnectExecutor null. Possibly this is still running after dispose?");
+                        return;
+                    }
                     LOG.info("Will try to reconnect in 5s...");
-                    reconnectFuture = reconnectExecutor.scheduleAtFixedRate(new Runnable() {
+                    cleanReconnectFuture();
+
+                    reconnectFuture = reconnectExecutor.schedule(new Runnable() {
                         @Override
                         public void run() {
                             if (autoAddressResolutionEnabled) {
@@ -1589,7 +1594,7 @@ public class Spi {
                                 }
                             }
                         }
-                    }, RECONNECTION_TIMEOUT, RECONNECTION_TIMEOUT, TimeUnit.MILLISECONDS);
+                    }, RECONNECTION_TIMEOUT, TimeUnit.MILLISECONDS);
                 } else if (getCurrentFlow() == SpiFlow.PAIRING) {
                     LOG.warn("Lost connection during pairing.");
                     getCurrentPairingFlowState().setMessage("Could not Connect to Pair. Check Network and Try Again...");
@@ -1919,6 +1924,8 @@ public class Spi {
 
         // Clean up timer
         cleanReconnectFuture();
+        reconnectExecutor.shutdownNow();
+        reconnectExecutor = null;
     }
 
     private void cleanReconnectFuture() {
@@ -1926,8 +1933,6 @@ public class Spi {
             reconnectFuture.cancel(true);
             reconnectFuture = null;
         }
-        reconnectExecutor.shutdownNow();
-        reconnectExecutor = null;
     }
 
     //endregion
@@ -1973,3 +1978,4 @@ public class Spi {
         void terminalConfigurationResponse(@NotNull Message message);
     }
 }
+
