@@ -1567,7 +1567,7 @@ public class Spi {
                         LOG.warn("reconnectExecutor null. Possibly this is still running after dispose?");
                         return;
                     }
-                    LOG.info(String.format("Will try to reconnect in %ds...", RECONNECTION_TIMEOUT / 1000));
+                    LOG.info("Will try to reconnect in %ds...", RECONNECTION_TIMEOUT / 1000);
                     cleanReconnectFuture();
 
                     reconnectFuture = reconnectExecutor.schedule(new Runnable() {
@@ -1978,4 +1978,3 @@ public class Spi {
         void terminalConfigurationResponse(@NotNull Message message);
     }
 }
-
