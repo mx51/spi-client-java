@@ -1473,19 +1473,27 @@ public class Spi {
     }
 
     private void handlePrintingResponse(@NotNull Message m) {
-        printingResponseDelegate.printingResponse(m);
+        if (printingResponseDelegate != null) {
+            printingResponseDelegate.printingResponse(m);
+        }
     }
 
     private void handleTerminalStatusResponse(@NotNull Message m) {
-        terminalStatusResponseDelegate.terminalStatusResponse(m);
+        if (terminalStatusResponseDelegate != null) {
+            terminalStatusResponseDelegate.terminalStatusResponse(m);
+        }
     }
 
     private void handleBatteryLevelChanged(@NotNull Message m) {
-        batteryLevelChangedDelegate.batteryLevelChanged(m);
+        if (batteryLevelChangedDelegate != null) {
+            batteryLevelChangedDelegate.batteryLevelChanged(m);
+        }
     }
 
     private void handleTerminalConfigurationResponse(@NotNull Message m) {
-        terminalConfigurationResponseDelegate.terminalConfigurationResponse(m);
+        if (terminalConfigurationResponseDelegate != null) {
+            terminalConfigurationResponseDelegate.terminalConfigurationResponse(m);
+        }
     }
 
     //endregion
