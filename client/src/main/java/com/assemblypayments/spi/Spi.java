@@ -927,7 +927,19 @@ public class Spi {
      */
     @NotNull
     public InitiateTxResult initiateMotoPurchaseTx(String posRefId, int amountCents, int surchargeAmount) {
-        return initiateMotoPurchaseTx(posRefId, amountCents, surchargeAmount, null);
+        return initiateMotoPurchaseTx(posRefId, amountCents, surchargeAmount, false);
+    }
+
+    /**
+     * Initiates a Mail Order / Telephone Order Purchase Transaction.
+     *
+     * @param posRefId        Alphanumeric identifier for your transaction.
+     * @param amountCents     Amount in cents
+     * @param surchargeAmount Surcharge amount in cents.
+     */
+    @NotNull
+    public InitiateTxResult initiateMotoPurchaseTx(String posRefId, int amountCents, int surchargeAmount, boolean suppressMerchantPassword) {
+        return initiateMotoPurchaseTx(posRefId, amountCents, surchargeAmount, suppressMerchantPassword, null);
     }
 
     /**
@@ -939,7 +951,7 @@ public class Spi {
      * @param options         Additional options applied on per-transaction basis.
      */
     @NotNull
-    public InitiateTxResult initiateMotoPurchaseTx(String posRefId, int amountCents, int surchargeAmount, TransactionOptions options) {
+    public InitiateTxResult initiateMotoPurchaseTx(String posRefId, int amountCents, int surchargeAmount, boolean suppressMerchantPassword, TransactionOptions options) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         synchronized (txLock) {
@@ -1023,7 +1035,7 @@ public class Spi {
         synchronized (txLock) {
             if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
 
-            final SettlementEnquiryRequest settleEnqRequest  = new SettlementEnquiryRequest(RequestIdHelper.id("stlenq"));
+            final SettlementEnquiryRequest settleEnqRequest = new SettlementEnquiryRequest(RequestIdHelper.id("stlenq"));
             settleEnqRequest.setConfig(config);
             settleEnqRequest.setOptions(options);
 
