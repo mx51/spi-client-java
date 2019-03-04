@@ -961,6 +961,7 @@ public class Spi {
             request.setSurchargeAmount(surchargeAmount);
             request.setConfig(config);
             request.setOptions(options);
+            request.setSuppressMerchantPassword(suppressMerchantPassword);
             final Message message = request.toMessage();
 
             setCurrentFlow(SpiFlow.TRANSACTION);
