@@ -28,36 +28,60 @@ public class SpiPreauth {
     }
 
     public InitiateTxResult initiateOpenTx(String posRefId, int amountCents) {
-        Message msg = new PreauthOpenRequest(amountCents, posRefId).toMessage();
+        return initiateOpenTx(posRefId, amountCents, null);
+    }
+
+    public InitiateTxResult initiateOpenTx(String posRefId, int amountCents, TransactionOptions options) {
+        PreauthOpenRequest preauthOpenRequest = new PreauthOpenRequest(amountCents, posRefId);
+        preauthOpenRequest.setConfig(spi.config);
+        preauthOpenRequest.setOptions(options);
         TransactionFlowState tfs = new TransactionFlowState(
-                posRefId, TransactionType.PREAUTH, amountCents, msg,
+                posRefId, TransactionType.PREAUTH, amountCents, preauthOpenRequest.toMessage(),
                 String.format("Waiting for EFTPOS connection to make preauth request for %.2f", amountCents / 100.0));
         String sentMsg = String.format("Asked EFTPOS to create preauth for %.2f", amountCents / 100.0);
         return initiatePreauthTx(tfs, sentMsg);
     }
 
     public InitiateTxResult initiateTopupTx(String posRefId, String preauthId, int amountCents) {
-        Message msg = new PreauthTopupRequest(preauthId, amountCents, posRefId).toMessage();
+        return initiateTopupTx(posRefId, preauthId, amountCents, null);
+    }
+
+    public InitiateTxResult initiateTopupTx(String posRefId, String preauthId, int amountCents, TransactionOptions options) {
+        PreauthTopupRequest preauthTopupRequest = new PreauthTopupRequest(preauthId, amountCents, posRefId);
+        preauthTopupRequest.setConfig(spi.config);
+        preauthTopupRequest.setOptions(options);
         TransactionFlowState tfs = new TransactionFlowState(
-                posRefId, TransactionType.PREAUTH, amountCents, msg,
+                posRefId, TransactionType.PREAUTH, amountCents, preauthTopupRequest.toMessage(),
                 String.format("Waiting for EFTPOS connection to make preauth topup request for %.2f", amountCents / 100.0));
         String sentMsg = String.format("Asked EFTPOS to make preauth topup for %.2f", amountCents / 100.0);
         return initiatePreauthTx(tfs, sentMsg);
     }
 
     public InitiateTxResult initiatePartialCancellationTx(String posRefId, String preauthId, int amountCents) {
-        Message msg = new PreauthPartialCancellationRequest(preauthId, amountCents, posRefId).toMessage();
+        return initiatePartialCancellationTx(posRefId, preauthId, amountCents, null);
+    }
+
+    public InitiateTxResult initiatePartialCancellationTx(String posRefId, String preauthId, int amountCents, TransactionOptions options) {
+        PreauthPartialCancellationRequest preauthPartialCancellationRequest = new PreauthPartialCancellationRequest(preauthId, amountCents, posRefId);
+        preauthPartialCancellationRequest.setConfig(spi.config);
+        preauthPartialCancellationRequest.setOptions(options);
         TransactionFlowState tfs = new TransactionFlowState(
-                posRefId, TransactionType.PREAUTH, amountCents, msg,
+                posRefId, TransactionType.PREAUTH, amountCents, preauthPartialCancellationRequest.toMessage(),
                 String.format("Waiting for EFTPOS connection to make preauth partial cancellation request for %.2f", amountCents / 100.0));
         String sentMsg = String.format("Asked EFTPOS to make preauth partial cancellation for %.2f", amountCents / 100.0);
         return initiatePreauthTx(tfs, sentMsg);
     }
 
     public InitiateTxResult initiateExtendTx(String posRefId, String preauthId) {
-        Message msg = new PreauthExtendRequest(preauthId, posRefId).toMessage();
+        return initiateExtendTx(posRefId, preauthId, null);
+    }
+
+    public InitiateTxResult initiateExtendTx(String posRefId, String preauthId, TransactionOptions options) {
+        PreauthExtendRequest preauthExtendRequest = new PreauthExtendRequest(preauthId, posRefId);
+        preauthExtendRequest.setConfig(spi.config);
+        preauthExtendRequest.setOptions(options);
         TransactionFlowState tfs = new TransactionFlowState(
-                posRefId, TransactionType.PREAUTH, 0, msg,
+                posRefId, TransactionType.PREAUTH, 0, preauthExtendRequest.toMessage(),
                 "Waiting for EFTPOS connection to make preauth extend request");
         String sentMsg = "Asked EFTPOS to make preauth extend request";
         return initiatePreauthTx(tfs, sentMsg);
@@ -68,8 +92,14 @@ public class SpiPreauth {
     }
 
     public InitiateTxResult initiateCompletionTx(String posRefId, String preauthId, int amountCents, int surchargeAmount) {
+        return initiateCompletionTx(posRefId, preauthId, amountCents, surchargeAmount, null);
+    }
+
+    public InitiateTxResult initiateCompletionTx(String posRefId, String preauthId, int amountCents, int surchargeAmount, TransactionOptions options) {
         PreauthCompletionRequest request = new PreauthCompletionRequest(preauthId, amountCents, posRefId);
         request.setSurchargeAmount(surchargeAmount);
+        request.setConfig(spi.config);
+        request.setOptions(options);
         Message msg = request.toMessage();
         TransactionFlowState tfs = new TransactionFlowState(
                 posRefId, TransactionType.PREAUTH, amountCents, msg,
@@ -79,9 +109,15 @@ public class SpiPreauth {
     }
 
     public InitiateTxResult initiateCancelTx(String posRefId, String preauthId) {
-        Message msg = new PreauthCancelRequest(preauthId, posRefId).toMessage();
+        return initiateCancelTx(posRefId, preauthId, null);
+    }
+
+    public InitiateTxResult initiateCancelTx(String posRefId, String preauthId, TransactionOptions options) {
+        PreauthCancelRequest preauthCancelRequest = new PreauthCancelRequest(preauthId, posRefId);
+        preauthCancelRequest.setConfig(spi.config);
+        preauthCancelRequest.setOptions(options);
         TransactionFlowState tfs = new TransactionFlowState(
-                posRefId, TransactionType.PREAUTH, 0, msg,
+                posRefId, TransactionType.PREAUTH, 0, preauthCancelRequest.toMessage(),
                 "Waiting for EFTPOS connection to make preauth cancellation request");
         String sentMsg = "Asked EFTPOS to make preauth cancellation request";
         return initiatePreauthTx(tfs, sentMsg);

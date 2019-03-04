@@ -88,4 +88,13 @@ public class PreauthResponse {
         return 0;
     }
 
+    public boolean wasMerchantReceiptPrinted() {
+        return m.getDataBooleanValue("merchant_receipt_printed", false);
+    }
+
+    public boolean wasCustomerReceiptPrinted() {
+        return m.getDataBooleanValue("customer_receipt_printed", false);
+    }
+
+
 }

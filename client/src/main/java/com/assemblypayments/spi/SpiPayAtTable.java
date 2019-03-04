@@ -19,6 +19,8 @@ public class SpiPayAtTable {
 
     private GetBillStatusDelegate getBillStatusDelegate;
     private BillPaymentReceivedDelegate billPaymentReceivedDelegate;
+    private GetOpenTablesDelegate getOpenTablesDelegate;
+    private BillPaymentFlowEndedDelegate billPaymentFlowEndedDelegate;
 
     SpiPayAtTable(Spi spi) {
         this.spi = spi;
@@ -52,14 +54,22 @@ public class SpiPayAtTable {
         this.billPaymentReceivedDelegate = billPaymentReceivedDelegate;
     }
 
+    public void setGetOpenTablesDelegate(GetOpenTablesDelegate getOpenTablesDelegate) {
+        this.getOpenTablesDelegate = getOpenTablesDelegate;
+    }
+
+    public void setBillPaymentFlowEndedDelegate(BillPaymentFlowEndedDelegate billPaymentFlowEndedDelegate) {
+        this.billPaymentFlowEndedDelegate = billPaymentFlowEndedDelegate;
+    }
+
     void handleGetBillDetailsRequest(@NotNull Message m) {
         String operatorId = m.getDataStringValue("operator_id");
         String tableId = m.getDataStringValue("table_id");
+        boolean paymentFlowStarted = m.getDataBooleanValue("payment_flow_started", false);
 
-        assert getBillStatusDelegate != null;
 
         // Ask POS for Bill Details for this tableId, including encoded PaymentData
-        BillStatusResponse billStatus = getBillStatusDelegate.getBillStatus(null, tableId, operatorId);
+        BillStatusResponse billStatus = getBillStatusDelegate.getBillStatus(null, tableId, operatorId, paymentFlowStarted);
         billStatus.setTableId(tableId);
         if (billStatus.getTotalAmount() <= 0) {
             LOG.info("Table has 0 total amount, not sending it to EFTPOS");
@@ -75,7 +85,7 @@ public class SpiPayAtTable {
         assert getBillStatusDelegate != null;
 
         // Ask POS for Bill Details, including encoded PaymentData
-        BillStatusResponse existingBillStatus = getBillStatusDelegate.getBillStatus(billPayment.getBillId(), billPayment.getTableId(), billPayment.getOperatorId());
+        BillStatusResponse existingBillStatus = getBillStatusDelegate.getBillStatus(billPayment.getBillId(), billPayment.getTableId(), billPayment.getOperatorId(), billPayment.getPaymentFlowStarted());
         if (existingBillStatus.getResult() != BillRetrievalResult.SUCCESS) {
             LOG.warn("Could not retrieve bill status for payment advice, sending error to EFTPOS");
             spi.send(existingBillStatus.toMessage(m.getId()));
@@ -134,21 +144,48 @@ public class SpiPayAtTable {
         spi.send(config.toMessage(m.getId()));
     }
 
+    void handleGetOpenTablesRequest(@NotNull Message m) {
+        assert getOpenTablesDelegate != null;
+
+        String operatorId = m.getDataStringValue("operator_id");
+
+        GetOpenTablesResponse openTablesResponse = getOpenTablesDelegate.getOpenTables(operatorId);
+        if (openTablesResponse.getTableData().length() <= 0) {
+            LOG.info("There is no open table.");
+        }
+
+        spi.send(openTablesResponse.toMessage(m.getId()));
+    }
+
+    void handleBillPaymentFlowEnded(@NotNull Message m) {
+        assert billPaymentFlowEndedDelegate != null;
+
+        billPaymentFlowEndedDelegate.getBillPaymentFlowEnded(m);
+    }
+
     public interface GetBillStatusDelegate {
         /**
          * This delegate will be called when the EFTPOS needs to know the current state of a bill for a table.
          *
-         * @param billId     The unique identifier of the bill. If empty, it means that the PayAtTable flow on
-         *                   the EFTPOS is just starting, and the lookup is by tableId.
-         * @param tableId    The identifier of the table that the bill is for.
-         * @param operatorId The id of the operator entered on the EFTPOS.
+         * @param billId             The unique identifier of the bill. If empty, it means that the PayAtTable flow on
+         *                           the EFTPOS is just starting, and the lookup is by tableId.
+         * @param tableId            The identifier of the table that the bill is for.
+         * @param operatorId         The id of the operator entered on the EFTPOS.
+         * @param paymentFlowStarted The flag of the payment flow started.
          * @return You need to return the current state of the bill.
          */
-        BillStatusResponse getBillStatus(String billId, String tableId, String operatorId);
+        BillStatusResponse getBillStatus(String billId, String tableId, String operatorId, boolean paymentFlowStarted);
     }
 
     public interface BillPaymentReceivedDelegate {
         BillStatusResponse getBillReceived(BillPayment billPayment, String updatedBillData);
     }
 
+    public interface GetOpenTablesDelegate {
+        GetOpenTablesResponse getOpenTables(String operatorId);
+    }
+
+    public interface BillPaymentFlowEndedDelegate {
+        void getBillPaymentFlowEnded(Message message);
+    }
 }

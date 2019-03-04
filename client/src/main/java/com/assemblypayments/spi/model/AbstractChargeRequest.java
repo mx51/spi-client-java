@@ -31,6 +31,10 @@ public abstract class AbstractChargeRequest implements Message.Compatible {
         final Map<String, Object> baseData = new HashMap<String, Object>();
         baseData.put("pos_ref_id", getPosRefId());
         baseData.putAll(data);
+
+        config.setEnabledPrintMerchantCopy(true);
+        config.setEnabledSignatureFlowOnEftpos(true);
+        config.setEnabledPromptForCustomerCopyOnEftpos(true);
         config.addReceiptConfig(baseData);
 
         if (options != null) {

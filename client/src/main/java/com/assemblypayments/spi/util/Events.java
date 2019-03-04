@@ -60,6 +60,9 @@ public final class Events {
     public static final String PAY_AT_TABLE_GET_BILL_DETAILS = "get_bill_details"; // Incoming. When EFTPOS wants to retrieve the bill for a table.
     public static final String PAY_AT_TABLE_BILL_DETAILS = "bill_details";        // Outgoing. We reply with this when eftpos requests to us get_bill_details.
     public static final String PAY_AT_TABLE_BILL_PAYMENT = "bill_payment";        // Incoming. When the EFTPOS advices.
+    public static final String PAY_AT_TABLE_GET_OPEN_TABLES = "get_open_tables";
+    public static final String PAY_AT_TABLE_OPEN_TABLES = "open_tables";
+    public static final String PAY_AT_TABLE_BILL_PAYMENT_FLOW_ENDED = "bill_payment_flow_ended";
 
     //endregion
 

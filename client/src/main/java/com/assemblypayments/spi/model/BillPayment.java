@@ -8,12 +8,10 @@ public class BillPayment {
     private final String billId;
     private final String tableId;
     private final String operatorId;
-
+    private final Boolean paymentFlowStarted;
     private final PaymentType paymentType;
-
     private final int purchaseAmount;
     private final int tipAmount;
-
     private final PurchaseResponse purchaseResponse;
 
     public BillPayment(@NotNull Message m) {
@@ -22,6 +20,7 @@ public class BillPayment {
         billId = m.getDataStringValue("bill_id");
         tableId = m.getDataStringValue("table_id");
         operatorId = m.getDataStringValue("operator_id");
+        paymentFlowStarted = m.getDataBooleanValue("payment_flow_started", false);
 
         paymentType = PaymentType.parse(m.getDataStringValue("payment_type"));
 
@@ -46,6 +45,10 @@ public class BillPayment {
         return operatorId;
     }
 
+    public Boolean getPaymentFlowStarted() {
+        return paymentFlowStarted;
+    }
+
     public PaymentType getPaymentType() {
         return paymentType;
     }
@@ -61,5 +64,4 @@ public class BillPayment {
     public PurchaseResponse getPurchaseResponse() {
         return purchaseResponse;
     }
-
 }

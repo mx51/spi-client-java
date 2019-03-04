@@ -21,6 +21,7 @@ public class BillStatusResponse {
     private BillRetrievalResult result;
     private String billId;
     private String tableId;
+    private String operatorId;
     private int totalAmount;
     private int outstandingAmount;
     private String billData;
@@ -160,4 +161,11 @@ public class BillStatusResponse {
         return new Message(messageId, Events.PAY_AT_TABLE_BILL_DETAILS, data, true);
     }
 
+    public String getOperatorId() {
+        return operatorId;
+    }
+
+    public void setOperatorId(String operatorId) {
+        this.operatorId = operatorId;
+    }
 }

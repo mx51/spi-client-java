@@ -25,7 +25,7 @@ public class Spi {
 
     private static final Logger LOG = LoggerFactory.getLogger("spi");
 
-    static final String PROTOCOL_VERSION = "2.4.0";
+    static final String PROTOCOL_VERSION = "2.5.0";
 
     private static final long RECONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(3);
     private static final long TX_MONITOR_CHECK_FREQUENCY = TimeUnit.SECONDS.toMillis(1);
@@ -711,20 +711,37 @@ public class Spi {
      * <p>
      * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} to get updates on the process.
      *
-     * @param posRefId                   Alphanumeric identifier for your refund.
-     * @param refundAmount               Amount in cents to charge.
-     * @param isSuppressMerchantPassword Merchant Password control in VAA
+     * @param posRefId                 Alphanumeric identifier for your refund.
+     * @param refundAmount             Amount in cents to charge.
+     * @param suppressMerchantPassword Merchant Password control in VAA
      * @return Initiation result {@link InitiateTxResult}.
      */
     @NotNull
-    public InitiateTxResult initiateRefundTx(String posRefId, int refundAmount, boolean isSuppressMerchantPassword) {
+    public InitiateTxResult initiateRefundTx(String posRefId, int refundAmount, boolean suppressMerchantPassword) {
+        return initiateRefundTx(posRefId, refundAmount, suppressMerchantPassword, null);
+    }
+
+    /**
+     * Initiates a refund transaction.
+     * <p>
+     * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} to get updates on the process.
+     *
+     * @param posRefId                 Alphanumeric identifier for your refund.
+     * @param refundAmount             Amount in cents to charge.
+     * @param suppressMerchantPassword Merchant Password control in VAA
+     * @param options                  Additional options applied on per-transaction basis.
+     * @return Initiation result {@link InitiateTxResult}.
+     */
+    @NotNull
+    public InitiateTxResult initiateRefundTx(String posRefId, int refundAmount, boolean suppressMerchantPassword, TransactionOptions options) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         synchronized (txLock) {
             if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
 
-            final RefundRequest request = PurchaseHelper.createRefundRequest(refundAmount, posRefId, isSuppressMerchantPassword);
+            final RefundRequest request = PurchaseHelper.createRefundRequest(refundAmount, posRefId, suppressMerchantPassword);
             request.setConfig(config);
+            request.setOptions(options);
             final Message message = request.toMessage();
 
             setCurrentFlow(SpiFlow.TRANSACTION);
@@ -851,6 +868,21 @@ public class Spi {
      */
     @NotNull
     public InitiateTxResult initiateCashoutOnlyTx(String posRefId, int amountCents, int surchargeAmount) {
+        return initiateCashoutOnlyTx(posRefId, amountCents, surchargeAmount, null);
+    }
+
+    /**
+     * Initiates a cashout only transaction.
+     * <p>
+     * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} event to get updates on the process.
+     *
+     * @param posRefId        Alphanumeric identifier for your transaction.
+     * @param amountCents     Amount in cents to cash out.
+     * @param surchargeAmount Amount in cents to surcharge.
+     * @param options         Additional options applied on per-transaction basis.
+     */
+    @NotNull
+    public InitiateTxResult initiateCashoutOnlyTx(String posRefId, int amountCents, int surchargeAmount, TransactionOptions options) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         synchronized (txLock) {
@@ -859,6 +891,7 @@ public class Spi {
             final CashoutOnlyRequest cashoutOnlyRequest = new CashoutOnlyRequest(amountCents, posRefId);
             cashoutOnlyRequest.setSurchargeAmount(surchargeAmount);
             cashoutOnlyRequest.setConfig(config);
+            cashoutOnlyRequest.setOptions(options);
             final Message cashoutMsg = cashoutOnlyRequest.toMessage();
 
             setCurrentFlow(SpiFlow.TRANSACTION);
@@ -894,6 +927,19 @@ public class Spi {
      */
     @NotNull
     public InitiateTxResult initiateMotoPurchaseTx(String posRefId, int amountCents, int surchargeAmount) {
+        return initiateMotoPurchaseTx(posRefId, amountCents, surchargeAmount, null);
+    }
+
+    /**
+     * Initiates a Mail Order / Telephone Order Purchase Transaction.
+     *
+     * @param posRefId        Alphanumeric identifier for your transaction.
+     * @param amountCents     Amount in cents
+     * @param surchargeAmount Surcharge amount in cents.
+     * @param options         Additional options applied on per-transaction basis.
+     */
+    @NotNull
+    public InitiateTxResult initiateMotoPurchaseTx(String posRefId, int amountCents, int surchargeAmount, TransactionOptions options) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         synchronized (txLock) {
@@ -902,6 +948,7 @@ public class Spi {
             final MotoPurchaseRequest request = new MotoPurchaseRequest(amountCents, posRefId);
             request.setSurchargeAmount(surchargeAmount);
             request.setConfig(config);
+            request.setOptions(options);
             final Message message = request.toMessage();
 
             setCurrentFlow(SpiFlow.TRANSACTION);
@@ -924,12 +971,25 @@ public class Spi {
      */
     @NotNull
     public InitiateTxResult initiateSettleTx(String posRefId) {
+        return initiateSettleTx(posRefId, null);
+    }
+
+    /**
+     * Initiates a settlement transaction.
+     *
+     * @param options Additional options applied on per-transaction basis.
+     *                Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} to get updates on the process.
+     */
+    @NotNull
+    public InitiateTxResult initiateSettleTx(String posRefId, TransactionOptions options) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         synchronized (txLock) {
             if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
 
             final SettleRequest settleRequest = new SettleRequest(RequestIdHelper.id("settle"));
+            settleRequest.setConfig(config);
+            settleRequest.setOptions(options);
             setCurrentFlow(SpiFlow.TRANSACTION);
             setCurrentTxFlowState(new TransactionFlowState(
                     posRefId, TransactionType.SETTLE, 0, settleRequest.toMessage(),
@@ -948,19 +1008,31 @@ public class Spi {
      */
     @NotNull
     public InitiateTxResult initiateSettlementEnquiry(String posRefId) {
+        return initiateSettlementEnquiry(posRefId, null);
+    }
+
+    /**
+     * Initiates settlement enquiry operation.
+     *
+     * @param options Additional options applied on per-transaction basis.
+     */
+    @NotNull
+    public InitiateTxResult initiateSettlementEnquiry(String posRefId, TransactionOptions options) {
         if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
 
         synchronized (txLock) {
             if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
 
-            final Message message = new SettlementEnquiryRequest(RequestIdHelper.id("stlenq")).toMessage();
+            final SettlementEnquiryRequest settleEnqRequest  = new SettlementEnquiryRequest(RequestIdHelper.id("stlenq"));
+            settleEnqRequest.setConfig(config);
+            settleEnqRequest.setOptions(options);
 
             setCurrentFlow(SpiFlow.TRANSACTION);
             setCurrentTxFlowState(new TransactionFlowState(
-                    posRefId, TransactionType.SETTLEMENT_ENQUIRY, 0, message,
+                    posRefId, TransactionType.SETTLEMENT_ENQUIRY, 0, settleEnqRequest.toMessage(),
                     "Waiting for EFTPOS connection to make a settlement enquiry"));
 
-            if (send(message)) {
+            if (send(settleEnqRequest.toMessage())) {
                 getCurrentTxFlowState().sent("Asked EFTPOS to make a settlement enquiry.");
             }
         }
@@ -1833,6 +1905,16 @@ public class Spi {
             final SpiPayAtTable spiPat = this.spiPat;
             if (spiPat != null) {
                 spiPat.handleBillPaymentAdvice(m);
+            }
+        } else if (Events.PAY_AT_TABLE_GET_OPEN_TABLES.equals(eventName)) {
+            final SpiPayAtTable spiPat = this.spiPat;
+            if (spiPat != null) {
+                spiPat.handleGetOpenTablesRequest(m);
+            }
+        } else if (Events.PAY_AT_TABLE_BILL_PAYMENT_FLOW_ENDED.equals(eventName)) {
+            final SpiPayAtTable spiPat = this.spiPat;
+            if (spiPat != null) {
+                spiPat.handleBillPaymentFlowEnded(m);
             }
         } else if (Events.PRINTING_RESPONSE.equals(eventName)) {
             handlePrintingResponse(m);
