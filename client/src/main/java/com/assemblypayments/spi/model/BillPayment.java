@@ -12,6 +12,7 @@ public class BillPayment {
     private final PaymentType paymentType;
     private final int purchaseAmount;
     private final int tipAmount;
+    private final int surchargeAmount;
     private final PurchaseResponse purchaseResponse;
 
     public BillPayment(@NotNull Message m) {
@@ -28,9 +29,9 @@ public class BillPayment {
         final Message purchaseMsg = new Message(m.getId(), "payment_details", m.getDataMapValue("payment_details"), false);
 
         purchaseResponse = new PurchaseResponse(purchaseMsg);
-
         purchaseAmount = purchaseResponse.getPurchaseAmount();
         tipAmount = purchaseResponse.getTipAmount();
+        surchargeAmount = purchaseResponse.getSurchargeAmount();
     }
 
     public String getBillId() {
@@ -63,5 +64,9 @@ public class BillPayment {
 
     public PurchaseResponse getPurchaseResponse() {
         return purchaseResponse;
+    }
+
+    public int getSurchargeAmount() {
+        return surchargeAmount;
     }
 }
