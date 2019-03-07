@@ -150,7 +150,7 @@ public class SpiPayAtTable {
         String operatorId = m.getDataStringValue("operator_id");
 
         GetOpenTablesResponse openTablesResponse = getOpenTablesDelegate.getOpenTables(operatorId);
-        if (openTablesResponse.getTableData().length() <= 0) {
+        if (openTablesResponse.getOpenTablesEntryData().length() <= 0) {
             LOG.info("There is no open table.");
         }
 
