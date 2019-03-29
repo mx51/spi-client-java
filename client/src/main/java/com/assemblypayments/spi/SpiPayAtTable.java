@@ -36,6 +36,7 @@ public class SpiPayAtTable {
         config.setLabelOperatorId("Operator ID");
         config.setLabelPayButton("Pay at Table");
         config.setLabelTableId("Table Number");
+        config.setTableRetrievalEnabled(true);
     }
 
     public PayAtTableConfig getConfig() {

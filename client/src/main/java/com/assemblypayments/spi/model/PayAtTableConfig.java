@@ -18,6 +18,7 @@ public class PayAtTableConfig {
     private String labelOperatorId;
     private String labelTableId;
     private List<String> allowedOperatorIds;
+    private boolean tableRetrievalEnabled;
 
     public boolean isPayAtTableEnabled() {
         return payAtTableEnabled;
@@ -119,6 +120,7 @@ public class PayAtTableConfig {
         data.put("operator_id_label", labelOperatorId);
         data.put("table_id_label", labelTableId);
         data.put("operator_id_list", allowedOperatorIds);
+        data.put("table_retrieval_enabled", tableRetrievalEnabled);
 
         return new Message(messageId, Events.PAY_AT_TABLE_SET_TABLE_CONFIG, data, true);
     }
@@ -130,4 +132,11 @@ public class PayAtTableConfig {
         return new Message(messageId, Events.PAY_AT_TABLE_SET_TABLE_CONFIG, data, true);
     }
 
+    public boolean isTableRetrievalEnabled() {
+        return tableRetrievalEnabled;
+    }
+
+    public void setTableRetrievalEnabled(boolean tableRetrievalEnabled) {
+        this.tableRetrievalEnabled = tableRetrievalEnabled;
+    }
 }
