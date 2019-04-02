@@ -713,7 +713,7 @@ public class Spi {
      *
      * @param posRefId                 Alphanumeric identifier for your refund.
      * @param refundAmount             Amount in cents to charge.
-     * @param suppressMerchantPassword Merchant Password control in VAA
+     * @param suppressMerchantPassword Allow to control the Merchant Password in VAA
      * @return Initiation result {@link InitiateTxResult}.
      */
     @NotNull
@@ -728,7 +728,7 @@ public class Spi {
      *
      * @param posRefId                 Alphanumeric identifier for your refund.
      * @param refundAmount             Amount in cents to charge.
-     * @param suppressMerchantPassword Merchant Password control in VAA
+     * @param suppressMerchantPassword Allow to control the Merchant Password in VAA
      * @param options                  Additional options applied on per-transaction basis.
      * @return Initiation result {@link InitiateTxResult}.
      */
@@ -933,9 +933,10 @@ public class Spi {
     /**
      * Initiates a Mail Order / Telephone Order Purchase Transaction.
      *
-     * @param posRefId        Alphanumeric identifier for your transaction.
-     * @param amountCents     Amount in cents
-     * @param surchargeAmount Surcharge amount in cents.
+     * @param posRefId                 Alphanumeric identifier for your transaction.
+     * @param amountCents              Amount in cents
+     * @param surchargeAmount          Surcharge amount in cents.
+     * @param suppressMerchantPassword Allow to control the Merchant Password in VAA.
      */
     @NotNull
     public InitiateTxResult initiateMotoPurchaseTx(String posRefId, int amountCents, int surchargeAmount, boolean suppressMerchantPassword) {
@@ -945,10 +946,11 @@ public class Spi {
     /**
      * Initiates a Mail Order / Telephone Order Purchase Transaction.
      *
-     * @param posRefId        Alphanumeric identifier for your transaction.
-     * @param amountCents     Amount in cents
-     * @param surchargeAmount Surcharge amount in cents.
-     * @param options         Additional options applied on per-transaction basis.
+     * @param posRefId                 Alphanumeric identifier for your transaction.
+     * @param amountCents              Amount in cents
+     * @param surchargeAmount          Surcharge amount in cents.
+     * @param suppressMerchantPassword Allow to control the Merchant Password in VAA.
+     * @param options                  Additional options applied on per-transaction basis.
      */
     @NotNull
     public InitiateTxResult initiateMotoPurchaseTx(String posRefId, int amountCents, int surchargeAmount, boolean suppressMerchantPassword, TransactionOptions options) {
