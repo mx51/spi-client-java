@@ -8,6 +8,16 @@ public class SpiConfig {
     private boolean signatureFlowOnEftpos;
     private boolean printMerchantCopy;
 
+    private boolean enabledPromptForCustomerCopyOnEftpos;
+    private boolean enabledSignatureFlowOnEftpos;
+    private boolean enabledPrintMerchantCopy;
+
+    public SpiConfig() {
+        setEnabledPromptForCustomerCopyOnEftpos(false);
+        setEnabledSignatureFlowOnEftpos(false);
+        setEnabledPrintMerchantCopy(false);
+    }
+
     public boolean isPromptForCustomerCopyOnEftpos() {
         return promptForCustomerCopyOnEftpos;
     }
@@ -23,19 +33,47 @@ public class SpiConfig {
     public void setSignatureFlowOnEftpos(boolean signatureFlowOnEftpos) {
         this.signatureFlowOnEftpos = signatureFlowOnEftpos;
     }
-    
+
+    public boolean isPrintMerchantCopy() {
+        return printMerchantCopy;
+    }
+
     public void setPrintMerchantCopy(boolean printMerchantCopy) {
         this.printMerchantCopy = printMerchantCopy;
-    }    
+    }
+
+    public boolean isEnabledPromptForCustomerCopyOnEftpos() {
+        return enabledPromptForCustomerCopyOnEftpos;
+    }
+
+    public void setEnabledPromptForCustomerCopyOnEftpos(boolean enabledPromptForCustomerCopyOnEftpos) {
+        this.enabledPromptForCustomerCopyOnEftpos = enabledPromptForCustomerCopyOnEftpos;
+    }
+
+    public boolean isEnabledSignatureFlowOnEftpos() {
+        return enabledSignatureFlowOnEftpos;
+    }
+
+    public void setEnabledSignatureFlowOnEftpos(boolean enabledSignatureFlowOnEftpos) {
+        this.enabledSignatureFlowOnEftpos = enabledSignatureFlowOnEftpos;
+    }
+
+    public boolean isEnabledPrintMerchantCopy() {
+        return enabledPrintMerchantCopy;
+    }
+
+    public void setEnabledPrintMerchantCopy(boolean enabledPrintMerchantCopy) {
+        this.enabledPrintMerchantCopy = enabledPrintMerchantCopy;
+    }
 
     void addReceiptConfig(Map<String, Object> messageData) {
-        if (promptForCustomerCopyOnEftpos) {
+        if (isPromptForCustomerCopyOnEftpos() && isEnabledPromptForCustomerCopyOnEftpos()) {
             messageData.put("prompt_for_customer_copy", true);
         }
-        if (signatureFlowOnEftpos) {
+        if (isEnabledSignatureFlowOnEftpos() && isEnabledSignatureFlowOnEftpos()) {
             messageData.put("print_for_signature_required_transactions", true);
         }
-        if (printMerchantCopy) {
+        if (isPrintMerchantCopy() && isPrintMerchantCopy()) {
             messageData.put("print_merchant_copy", true);
         }
 

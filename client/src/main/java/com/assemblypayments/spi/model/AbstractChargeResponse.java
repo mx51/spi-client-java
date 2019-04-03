@@ -62,10 +62,6 @@ public abstract class AbstractChargeResponse extends AbstractTransactionResponse
         return m.getDataStringValue("masked_pan");
     }
 
-    public boolean wasMerchantReceiptPrinted() {
-        return m.getDataBooleanValue("merchant_receipt_printed", false);
-    }
-
     public boolean wasCustomerReceiptPrinted() {
         return m.getDataBooleanValue("customer_receipt_printed", false);
     }

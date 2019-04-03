@@ -12,6 +12,8 @@ public class PreauthCompletionRequest implements Message.Compatible {
     private final int completionAmount;
     private final String posRefId;
     private int surchargeAmount;
+    private SpiConfig config = new SpiConfig();
+    private TransactionOptions options = new TransactionOptions();
 
     public PreauthCompletionRequest(String preauthId, int completionAmountCents, String posRefId) {
         this.preauthId = preauthId;
@@ -39,6 +41,14 @@ public class PreauthCompletionRequest implements Message.Compatible {
         return surchargeAmount;
     }
 
+    public void setConfig(SpiConfig config) {
+        this.config = config;
+    }
+
+    public void setOptions(TransactionOptions options) {
+        this.options = options;
+    }
+
     @Override
     public Message toMessage() {
         final Map<String, Object> data = new HashMap<String, Object>();
@@ -46,6 +56,15 @@ public class PreauthCompletionRequest implements Message.Compatible {
         data.put("preauth_id", getPreauthId());
         data.put("completion_amount", getCompletionAmount());
         data.put("surcharge_amount", getSurchargeAmount());
+
+        config.setEnabledPrintMerchantCopy(true);
+        config.setEnabledSignatureFlowOnEftpos(true);
+        config.setEnabledPromptForCustomerCopyOnEftpos(true);
+        config.addReceiptConfig(data);
+
+        if (options != null) {
+            options.addOptions(data);
+        }
 
         return new Message(RequestIdHelper.id("prac"), Events.PREAUTH_COMPLETE_REQUEST, data, true);
     }

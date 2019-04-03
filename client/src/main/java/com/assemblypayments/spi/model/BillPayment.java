@@ -8,12 +8,11 @@ public class BillPayment {
     private final String billId;
     private final String tableId;
     private final String operatorId;
-
+    private final Boolean paymentFlowStarted;
     private final PaymentType paymentType;
-
     private final int purchaseAmount;
     private final int tipAmount;
-
+    private final int surchargeAmount;
     private final PurchaseResponse purchaseResponse;
 
     public BillPayment(@NotNull Message m) {
@@ -22,6 +21,7 @@ public class BillPayment {
         billId = m.getDataStringValue("bill_id");
         tableId = m.getDataStringValue("table_id");
         operatorId = m.getDataStringValue("operator_id");
+        paymentFlowStarted = m.getDataBooleanValue("payment_flow_started", false);
 
         paymentType = PaymentType.parse(m.getDataStringValue("payment_type"));
 
@@ -29,9 +29,9 @@ public class BillPayment {
         final Message purchaseMsg = new Message(m.getId(), "payment_details", m.getDataMapValue("payment_details"), false);
 
         purchaseResponse = new PurchaseResponse(purchaseMsg);
-
         purchaseAmount = purchaseResponse.getPurchaseAmount();
         tipAmount = purchaseResponse.getTipAmount();
+        surchargeAmount = purchaseResponse.getSurchargeAmount();
     }
 
     public String getBillId() {
@@ -44,6 +44,10 @@ public class BillPayment {
 
     public String getOperatorId() {
         return operatorId;
+    }
+
+    public Boolean getPaymentFlowStarted() {
+        return paymentFlowStarted;
     }
 
     public PaymentType getPaymentType() {
@@ -62,4 +66,7 @@ public class BillPayment {
         return purchaseResponse;
     }
 
+    public int getSurchargeAmount() {
+        return surchargeAmount;
+    }
 }

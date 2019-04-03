@@ -52,4 +52,7 @@ public abstract class AbstractTransactionResponse {
         return m.getDataStringValue(attribute);
     }
 
+    public boolean wasMerchantReceiptPrinted() {
+        return m.getDataBooleanValue("merchant_receipt_printed", false);
+    }
 }

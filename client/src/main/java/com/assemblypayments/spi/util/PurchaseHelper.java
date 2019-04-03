@@ -30,9 +30,9 @@ public final class PurchaseHelper {
         return createRefundRequest(amountCents, purchaseId, false);
     }
 
-    public static RefundRequest createRefundRequest(int amountCents, String purchaseId, boolean isSuppressMerchantPassword) {
+    public static RefundRequest createRefundRequest(int amountCents, String purchaseId, boolean suppressMerchantPassword) {
         final RefundRequest request = new RefundRequest(amountCents, purchaseId);
-        request.setSuppressMerchantPassword(isSuppressMerchantPassword);
+        request.setSuppressMerchantPassword(suppressMerchantPassword);
         return request;
     }
 
