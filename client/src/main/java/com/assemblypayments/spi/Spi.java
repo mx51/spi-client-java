@@ -25,7 +25,7 @@ public class Spi {
 
     private static final Logger LOG = LoggerFactory.getLogger("spi");
 
-    static final String PROTOCOL_VERSION = "2.4.0";
+    static final String PROTOCOL_VERSION = "2.6.0";
 
     private static final long RECONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(3);
     private static final long TX_MONITOR_CHECK_FREQUENCY = TimeUnit.SECONDS.toMillis(1);
@@ -306,7 +306,7 @@ public class Spi {
      *
      * @param value Status value {@link SpiStatus}.
      */
-    private void setCurrentStatus(@NotNull SpiStatus value) {
+    public void setCurrentStatus(@NotNull SpiStatus value) {
         if (currentStatus == value) return;
         currentStatus = value;
         statusChanged();
@@ -1028,6 +1028,83 @@ public class Spi {
         }
         txFlowStateChanged();
         return new InitiateTxResult(true, "Recovery Initiated");
+    }
+
+    /**
+     * Initiates a purchase transaction.
+     * <p>
+     * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} to get updates on the process.
+     *
+     * @param posRefId       Alphanumeric identifier for your purchase.
+     * @param purchaseAmount Amount in cents to charge.
+     * @param description    Description of the item to purchase
+     * @param storeCode      Zip store code used for this transaction
+     * @param options        Additional options applied on per-transaction basis.
+     * @return Initiation result {@link InitiateTxResult}.
+     */
+    @NotNull
+    public InitiateTxResult initiateZipPurchaseTx(String posRefId, int purchaseAmount, String description, String storeCode, TransactionOptions options) {
+        if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
+
+        synchronized (txLock) {
+            if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
+            setCurrentFlow(SpiFlow.TRANSACTION);
+
+            final ZipPurchaseRequest request = new ZipPurchaseRequest(purchaseAmount, posRefId);
+            request.setDescription(description);
+            request.setStoreCode(storeCode);
+            request.setConfig(config);
+            request.setOptions(options);
+            final Message message = request.toMessage();
+
+            setCurrentTxFlowState(new TransactionFlowState(
+                    posRefId, TransactionType.ZIP_PURCHASE, purchaseAmount, message,
+                    "Waiting for EFTPOS connection to make payment request. " + request.amountSummary()));
+
+            if (send(message)) {
+                getCurrentTxFlowState().sent("Asked EFTPOS to accept payment for " + request.amountSummary());
+            }
+        }
+        txFlowStateChanged();
+        return new InitiateTxResult(true, "Purchase Initiated");
+    }
+
+    /**
+     * Initiates a refund transaction.
+     * <p>
+     * Be subscribed to {@link #setTxFlowStateChangedHandler(EventHandler)} to get updates on the process.
+     *
+     * @param posRefId             Alphanumeric identifier for your refund.
+     * @param refundAmount         Amount in cents to charge.
+     * @param orginalReceiptNumber Zip transaction identifier to refund.
+     * @param options              Additional options applied on per-transaction basis.
+     * @return Initiation result {@link InitiateTxResult}.
+     */
+    @NotNull
+    public InitiateTxResult initiateZipRefundTx(String posRefId, int refundAmount, String orginalReceiptNumber, TransactionOptions options) {
+        if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
+
+        synchronized (txLock) {
+            if (getCurrentFlow() != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
+
+            final ZipRefundRequest request = new ZipRefundRequest(refundAmount, posRefId);
+            request.setOriginalReceiptNumber(orginalReceiptNumber);
+            request.setConfig(config);
+            request.setOptions(options);
+            final Message message = request.toMessage();
+
+            setCurrentFlow(SpiFlow.TRANSACTION);
+            setCurrentTxFlowState(new TransactionFlowState(
+                    posRefId, TransactionType.ZIP_REFUND, refundAmount, message,
+                    String.format("Waiting for EFTPOS connection to make refund request for %.2f", refundAmount / 100.0)));
+
+            if (send(message)) {
+                getCurrentTxFlowState().sent(String.format("Asked EFTPOS to refund %.2f", refundAmount / 100.0));
+            }
+        }
+
+        txFlowStateChanged();
+        return new InitiateTxResult(true, "Refund Initiated");
     }
 
     /**
@@ -1842,6 +1919,10 @@ public class Spi {
             handleBatteryLevelChanged(m);
         } else if (Events.TERMINAL_CONFIGURATION_RESPONSE.equals(eventName)) {
             handleTerminalConfigurationResponse(m);
+        } else if (Events.ZIP_PURCHASE_RESPONSE.equals(eventName)) {
+            handleZipPurchaseResponse(m);
+        } else if (Events.ZIP_REFUND_RESPONSE.equals(eventName)) {
+            handleZipRefundResponse(m);
         } else if (Events.ERROR.equals(eventName)) {
             handleErrorEvent(m);
         } else if (Events.INVALID_HMAC_SIGNATURE.equals(eventName)) {
@@ -1851,13 +1932,21 @@ public class Spi {
         }
     }
 
+    private void handleZipRefundResponse(Message m) {
+        handleTxResponse(m, TransactionType.ZIP_REFUND, true);
+    }
+
+    private void handleZipPurchaseResponse(Message m) {
+        handleTxResponse(m, TransactionType.ZIP_PURCHASE, true);
+    }
+
     private void onWsErrorReceived(@Nullable Throwable error) {
         LOG.error("Received WS error", error);
     }
 
     boolean send(Message message) {
         final String json = message.toJson(spiMessageStamp);
-        if (conn.isConnected()) {
+        if (conn != null && conn.isConnected()) {
             LOG.debug("Sending: " + message.getDecryptedJson());
             conn.send(json);
             return true;

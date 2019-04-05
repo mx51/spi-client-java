@@ -97,6 +97,11 @@ public final class Events {
 
     public static final String BATTERY_LEVEL_CHANGED = "battery_level_changed";
 
+    public static final String ZIP_PURCHASE_REQUEST = "purchase_zip";
+    public static final String ZIP_PURCHASE_RESPONSE = "purchase_zip_response";
+    public static final String ZIP_REFUND_REQUEST = "refund_zip";
+    public static final String ZIP_REFUND_RESPONSE = "refund_zip_response";
+
     //endregion
 
     private Events() {

@@ -11,7 +11,9 @@ public enum TransactionType {
     SETTLEMENT_ENQUIRY("Settlement Enquiry"),
     GET_LAST_TRANSACTION("Get Last Transaction"),
     PREAUTH("Preauth"),
-    ACCOUNT_VERIFY("Account Verify");
+    ACCOUNT_VERIFY("Account Verify"),
+    ZIP_PURCHASE("Zip Purchase"),
+    ZIP_REFUND("Zip Refund");
 
     private final String name;
 
