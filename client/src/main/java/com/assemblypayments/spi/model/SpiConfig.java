@@ -70,7 +70,7 @@ public class SpiConfig {
         if (isPromptForCustomerCopyOnEftpos() && isEnabledPromptForCustomerCopyOnEftpos()) {
             messageData.put("prompt_for_customer_copy", true);
         }
-        if (isEnabledSignatureFlowOnEftpos() && isEnabledSignatureFlowOnEftpos()) {
+        if (isSignatureFlowOnEftpos() && isEnabledSignatureFlowOnEftpos()) {
             messageData.put("print_for_signature_required_transactions", true);
         }
         if (isPrintMerchantCopy() && isPrintMerchantCopy()) {
