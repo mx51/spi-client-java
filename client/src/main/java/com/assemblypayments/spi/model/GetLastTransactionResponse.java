@@ -37,7 +37,7 @@ public class GetLastTransactionResponse {
     }
 
     public boolean isStillInProgress(String posRefId) {
-        return wasOperationInProgressError() && getPosRefId().equals(posRefId);
+        return wasOperationInProgressError() && (getPosRefId().equals(posRefId) || getPosRefId() == null);
     }
 
     public Message.SuccessState getSuccessState() {
