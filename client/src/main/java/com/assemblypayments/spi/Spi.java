@@ -1,8 +1,7 @@
 package com.assemblypayments.spi;
 
 import com.assemblypayments.spi.model.*;
-import com.assemblypayments.spi.model.DeviceAddressStatus;
-import com.assemblypayments.spi.service.*;
+import com.assemblypayments.spi.service.DeviceService;
 import com.assemblypayments.spi.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -12,6 +11,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.websocket.DeploymentException;
 import java.security.GeneralSecurityException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -1159,6 +1161,47 @@ public class Spi {
         return gltMatch(gltResponse, posRefId);
     }
 
+    /**
+     * Attempts to conclude whether a gltResponse matches an expected transaction and returns the outcome.
+     * <p>
+     * If {@link Message.SuccessState#SUCCESS}/{@link Message.SuccessState#FAILED} is returned, it means that
+     * the GLT response did match, and that transaction was successful/failed.
+     * <p>
+     * If {@link Message.SuccessState#UNKNOWN} is returned, it means that the gltResponse does not match the
+     * expected transaction.
+     *
+     * @param gltResponse    The {@link GetLastTransactionResponse} message to check.
+     * @param expectedAmount The expected amount in cents.
+     * @param requestTime    The time you made your request.
+     * @param posRefId       The reference ID that you passed in with the original request. Currently not used.
+     */
+    @NotNull
+    public Message.SuccessState gltMatch(@NotNull GetLastTransactionResponse gltResponse, int expectedAmount, long requestTime, String posRefId) {
+        LOG.info("GLT CHECK: PosRefId: " + posRefId + "->" + gltResponse.getPosRefId());
+        SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyyHHmmss");
+        Date gltBankDate = null;
+        Date requestDateTime = null;
+
+        try {
+            gltBankDate = sdf.parse(gltResponse.getBankDateTimeString());
+            requestDateTime = sdf.parse(String.valueOf(requestTime));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        int compare = requestDateTime.compareTo(gltBankDate);
+
+        if (!posRefId.equals(gltResponse.getPosRefId())) {
+            return Message.SuccessState.UNKNOWN;
+        }
+
+        if (gltResponse.getTxType().equals("PURCHASE") && gltResponse.getBankNonCashAmount() != expectedAmount && compare > 0) {
+            return Message.SuccessState.UNKNOWN;
+        }
+
+        return gltResponse.getSuccessState();
+    }
+
     //endregion
 
     //region Internals for pairing flow
@@ -1463,7 +1506,7 @@ public class Spi {
                     txState.completed(m.getSuccessState(), m, "Last transaction retrieved");
                 } else {
                     // TH-4A - Let's try to match the received last transaction against the current transaction
-                    Message.SuccessState successState = gltMatch(gltResponse, txState.getPosRefId());
+                    Message.SuccessState successState = gltMatch(gltResponse, txState.getAmountCents(), txState.getRequestTime(), txState.getPosRefId());
                     if (successState == Message.SuccessState.UNKNOWN) {
                         // TH-4N: Didn't Match our transaction. Consider unknown state.
                         LOG.info("Did not match transaction.");

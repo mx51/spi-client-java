@@ -56,6 +56,10 @@ public class GetLastTransactionResponse {
         return m.getDataStringValue("pos_ref_id");
     }
 
+    public int getBankNonCashAmount() {
+        return m.getDataIntValue("bank_noncash_amount");
+    }
+
     /**
      * @deprecated Should not need to look at this in a GLT Response.
      */
@@ -64,10 +68,6 @@ public class GetLastTransactionResponse {
         return m.getDataIntValue("amount_transaction_type");
     }
 
-    /**
-     * @deprecated Should not need to look at this in a GLT Response.
-     */
-    @Deprecated
     public String getBankDateTimeString() {
         return m.getDataStringValue("bank_date") + m.getDataStringValue("bank_time");
     }
