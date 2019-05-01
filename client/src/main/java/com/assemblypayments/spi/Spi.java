@@ -1195,7 +1195,7 @@ public class Spi {
             return Message.SuccessState.UNKNOWN;
         }
 
-        if (gltResponse.getTxType().equals("PURCHASE") && gltResponse.getBankNonCashAmount() != expectedAmount && compare > 0) {
+        if (gltResponse.getTxType().toUpperCase().equals("PURCHASE") && gltResponse.getBankNonCashAmount() != expectedAmount && compare > 0) {
             return Message.SuccessState.UNKNOWN;
         }
 
