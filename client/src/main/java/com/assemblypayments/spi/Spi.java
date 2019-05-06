@@ -27,7 +27,7 @@ public class Spi {
 
     private static final Logger LOG = LoggerFactory.getLogger("spi");
 
-    static final String PROTOCOL_VERSION = "2.5.0";
+    static final String PROTOCOL_VERSION = "2.6.0";
 
     private static final long RECONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(3);
     private static final long TX_MONITOR_CHECK_FREQUENCY = TimeUnit.SECONDS.toMillis(1);
@@ -131,17 +131,6 @@ public class Spi {
         missedPongsCount = 0;
     }
 
-    public SpiPayAtTable enablePayAtTable() {
-        spiPat = new SpiPayAtTable(this);
-        return spiPat;
-    }
-
-    public SpiPayAtTable disablePayAtTable() {
-        spiPat = new SpiPayAtTable(this);
-        spiPat.getConfig().setPayAtTableEnabled(false);
-        return spiPat;
-    }
-
     public SpiPreauth enablePreauth() {
         spiPreauth = new SpiPreauth(this, txLock);
         return spiPreauth;
@@ -211,6 +200,10 @@ public class Spi {
         return true;
     }
 
+    public String getSerialNumber() {
+        return this.serialNumber;
+    }
+
     /**
      * Allows you to set the auto address discovery feature.
      */
@@ -225,6 +218,10 @@ public class Spi {
         }
 
         return true;
+    }
+
+    public boolean isAutoAddressResolutionEnabled() {
+        return this.autoAddressResolutionEnabled;
     }
 
     /**
@@ -308,7 +305,7 @@ public class Spi {
      *
      * @param value Status value {@link SpiStatus}.
      */
-    private void setCurrentStatus(@NotNull SpiStatus value) {
+    public void setCurrentStatus(@NotNull SpiStatus value) {
         if (currentStatus == value) return;
         currentStatus = value;
         statusChanged();

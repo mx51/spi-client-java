@@ -22,21 +22,10 @@ public class SpiPayAtTable {
     private GetOpenTablesDelegate getOpenTablesDelegate;
     private BillPaymentFlowEndedDelegate billPaymentFlowEndedDelegate;
 
-    SpiPayAtTable(Spi spi) {
+    public SpiPayAtTable(Spi spi) {
         this.spi = spi;
 
         config = new PayAtTableConfig();
-        config.setPayAtTableEnabled(true);
-        config.setOperatorIdEnabled(true);
-        config.setAllowedOperatorIds(new ArrayList<String>());
-        config.setEqualSplitEnabled(true);
-        config.setSplitByAmountEnabled(true);
-        config.setSummaryReportEnabled(true);
-        config.setTippingEnabled(true);
-        config.setLabelOperatorId("Operator ID");
-        config.setLabelPayButton("Pay at Table");
-        config.setLabelTableId("Table Number");
-        config.setTableRetrievalEnabled(true);
     }
 
     public PayAtTableConfig getConfig() {
