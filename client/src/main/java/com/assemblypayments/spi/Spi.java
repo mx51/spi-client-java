@@ -195,6 +195,8 @@ public class Spi {
 
         if (hasSerialNumberChanged(was)) {
             autoResolveEftposAddress();
+        } else {
+            deviceStatusChanged(null);
         }
 
         return true;
@@ -2030,11 +2032,20 @@ public class Spi {
                 DeviceService deviceService = new DeviceService();
                 DeviceAddressStatus addressResponse = deviceService.retrieveService(serialNumber, deviceApiKey, acquirerCode, inTestMode);
 
-                if (addressResponse == null) return;
+                if (addressResponse == null) {
+                    deviceStatusChanged(null);
+                    return;
+                }
 
-                if (addressResponse.getAddress() == null) return;
+                if (addressResponse.getAddress() == null) {
+                    deviceStatusChanged(null);
+                    return;
+                }
 
-                if (!hasEftposAddressChanged(addressResponse.getAddress())) return;
+                if (!hasEftposAddressChanged(addressResponse.getAddress())) {
+                    deviceStatusChanged(null);
+                    return;
+                }
 
                 // update device and connection address
                 eftposAddress = "ws://" + addressResponse.getAddress();
