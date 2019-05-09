@@ -22,9 +22,8 @@ public class SpiPayAtTable {
     private GetOpenTablesDelegate getOpenTablesDelegate;
     private BillPaymentFlowEndedDelegate billPaymentFlowEndedDelegate;
 
-    public SpiPayAtTable(Spi spi) {
+    SpiPayAtTable(Spi spi) {
         this.spi = spi;
-
         config = new PayAtTableConfig();
     }
 

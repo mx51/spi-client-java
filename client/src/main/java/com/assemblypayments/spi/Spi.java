@@ -131,6 +131,11 @@ public class Spi {
         missedPongsCount = 0;
     }
 
+    public SpiPayAtTable enablePayAtTable() {
+        spiPat = new SpiPayAtTable(this);
+        return spiPat;
+    }
+
     public SpiPreauth enablePreauth() {
         spiPreauth = new SpiPreauth(this, txLock);
         return spiPreauth;
@@ -196,7 +201,8 @@ public class Spi {
         if (hasSerialNumberChanged(was)) {
             autoResolveEftposAddress();
         } else {
-            deviceStatusChanged(null);
+            getCurrentDeviceStatus().setDeviceAddressResponseCode(DeviceAddressResponseCode.SERIAL_NUMBER_NOT_CHANGED);
+            deviceStatusChanged(getCurrentDeviceStatus());
         }
 
         return true;
@@ -2033,17 +2039,30 @@ public class Spi {
                 DeviceAddressStatus addressResponse = deviceService.retrieveService(serialNumber, deviceApiKey, acquirerCode, inTestMode);
 
                 if (addressResponse == null) {
-                    deviceStatusChanged(null);
+                    DeviceAddressStatus state = new DeviceAddressStatus();
+                    state.setAddress(null);
+                    state.setLastUpdated(null);
+                    state.setDeviceAddressResponseCode(DeviceAddressResponseCode.ERROR);
+                    setCurrentDeviceStatus(state);
+
+                    deviceStatusChanged(getCurrentDeviceStatus());
                     return;
                 }
 
                 if (addressResponse.getAddress() == null) {
-                    deviceStatusChanged(null);
+                    DeviceAddressStatus state = new DeviceAddressStatus();
+                    state.setAddress(null);
+                    state.setLastUpdated(null);
+                    state.setDeviceAddressResponseCode(DeviceAddressResponseCode.ERROR);
+                    setCurrentDeviceStatus(state);
+
+                    deviceStatusChanged(getCurrentDeviceStatus());
                     return;
                 }
 
                 if (!hasEftposAddressChanged(addressResponse.getAddress())) {
-                    deviceStatusChanged(null);
+                    getCurrentDeviceStatus().setDeviceAddressResponseCode(DeviceAddressResponseCode.SERIAL_NUMBER_NOT_CHANGED);
+                    deviceStatusChanged(getCurrentDeviceStatus());
                     return;
                 }
 
@@ -2054,6 +2073,7 @@ public class Spi {
                 DeviceAddressStatus state = new DeviceAddressStatus();
                 state.setAddress(addressResponse.getAddress());
                 state.setLastUpdated(addressResponse.getLastUpdated());
+                state.setDeviceAddressResponseCode(DeviceAddressResponseCode.SUCCESS);
                 setCurrentDeviceStatus(state);
 
                 deviceStatusChanged(getCurrentDeviceStatus());
