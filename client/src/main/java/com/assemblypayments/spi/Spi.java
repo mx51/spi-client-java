@@ -2027,8 +2027,6 @@ public class Spi {
 
                 if (addressResponse == null) {
                     DeviceAddressStatus state = new DeviceAddressStatus();
-                    state.setAddress(null);
-                    state.setLastUpdated(null);
                     state.setDeviceAddressResponseCode(DeviceAddressResponseCode.ERROR);
                     setCurrentDeviceStatus(state);
 
@@ -2038,8 +2036,6 @@ public class Spi {
 
                 if (addressResponse.getAddress() == null) {
                     DeviceAddressStatus state = new DeviceAddressStatus();
-                    state.setAddress(null);
-                    state.setLastUpdated(null);
                     state.setDeviceAddressResponseCode(DeviceAddressResponseCode.ERROR);
                     setCurrentDeviceStatus(state);
 
