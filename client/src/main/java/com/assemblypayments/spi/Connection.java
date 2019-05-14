@@ -1,18 +1,10 @@
 package com.assemblypayments.spi;
 
-import org.glassfish.tyrus.client.ClientManager;
-import org.jetbrains.annotations.NotNull;
+import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.websocket.*;
-import javax.websocket.CloseReason.CloseCodes;
-import java.io.IOException;
-import java.net.URI;
-import java.util.Collections;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.Future;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.TimeUnit;
 
 class Connection {
@@ -23,12 +15,15 @@ class Connection {
     private EventHandler eventHandler;
     private State state;
     private String address;
-    private Session wsSession;
-    private Timer connectionTimer;
+    private WebSocket webSocket;
+    private OkHttpClient httpClient;
 
     public Connection(String address) {
         this.address = address;
         this.state = State.DISCONNECTED;
+        this.httpClient = new OkHttpClient.Builder()
+                .connectTimeout(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+                .build();
     }
 
     public void setEventHandler(EventHandler eventHandler) {
@@ -56,7 +51,7 @@ class Connection {
         this.address = address;
     }
 
-    public void connect() throws DeploymentException {
+    public void connect() {
         // already connected or connecting. disconnect first.
         if (state == State.CONNECTED || state == State.CONNECTING) return;
 
@@ -70,58 +65,49 @@ class Connection {
             address = prefix + address;
         }
 
-        try {
-            // Create a new socket instance specifying the url, SPI protocol and web socket to use.
-            // This will create a TCP/IP socket connection to the provided URL and perform HTTP web socket negotiation
-            final Future<Session> sessionFuture = ClientManager.createClient().asyncConnectToServer(
-                    new Endpoint() {
-                        @Override
-                        public void onOpen(Session session, EndpointConfig config) {
-                            Connection.this.onOpen(session);
-                        }
+        // Create a new socket instance specifying the url, SPI protocol and web socket to use.
+        // This will create a TCP/IP socket connection to the provided URL and perform HTTP web socket negotiation
+        webSocket = httpClient.newWebSocket(new Request.Builder()
+                .url(address)
+                .addHeader("Sec-WebSocket-Protocol", "spi." + Spi.PROTOCOL_VERSION)
+                .build(), new WebSocketListener() {
+            @Override
+            public void onOpen(WebSocket webSocket, Response response) {
+                Connection.this.onOpen();
+            }
 
-                        @Override
-                        public void onClose(Session session, CloseReason closeReason) {
-                            Connection.this.onClose();
-                        }
+            @Override
+            public void onMessage(WebSocket webSocket, String text) {
+                onMessageReceived(text);
+            }
 
-                        @Override
-                        public void onError(Session session, Throwable thr) {
-                            Connection.this.onError(thr);
-                        }
-                    },
-                    ClientEndpointConfig.Builder.create()
-                            .preferredSubprotocols(Collections.singletonList("spi." + Spi.PROTOCOL_VERSION))
-                            .build(),
-                    URI.create(address));
+            @Override
+            public void onClosed(WebSocket webSocket, int code, String reason) {
+                Connection.this.onClose();
+            }
 
-            // Wait for a connection...
-            cancelConnectionTimer();
-            connectionTimer = new Timer();
-            connectionTimer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    sessionFuture.cancel(true);
-                    onError(new TimeoutException(CONNECTION_TIMEOUT));
+            @Override
+            public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                if (t instanceof SocketTimeoutException) {
+                    // Existing users may be checking for TimeoutException,
+                    // so this is required for backwards compatibility.
+                    t = new TimeoutException(CONNECTION_TIMEOUT);
+                }
+                Connection.this.onError(t);
+                if (state == State.CONNECTING) {
                     onClose();
                 }
-            }, CONNECTION_TIMEOUT);
-        } catch (DeploymentException e) {
-            onError(e);
-            onClose();
-            throw e;
-        }
+            }
+        });
     }
 
     public void send(String message) {
-        wsSession.getAsyncRemote().sendText(message);
+        webSocket.send(message);
     }
 
     public void disconnect() {
-        cancelConnectionTimer();
-
         if (this.state != State.DISCONNECTED) {
-            closeSession(CloseCodes.GOING_AWAY);
+            closeSession(1001);
             onClose();
         }
     }
@@ -130,22 +116,12 @@ class Connection {
         disconnect();
     }
 
-    private void onOpen(Session session) {
-        cancelConnectionTimer();
-
-        session.addMessageHandler(new MessageHandler.Whole<String>() {
-            @Override
-            public void onMessage(String message) {
-                onMessageReceived(message);
-            }
-        });
-
-        wsSession = session;
+    private void onOpen() {
         setState(State.CONNECTED);
     }
 
     private void onClose() {
-        wsSession = null;
+        webSocket = null;
         setState(State.DISCONNECTED);
     }
 
@@ -157,20 +133,9 @@ class Connection {
         if (eventHandler != null) eventHandler.onError(thr);
     }
 
-    private void cancelConnectionTimer() {
-        if (connectionTimer != null) {
-            connectionTimer.cancel();
-            connectionTimer = null;
-        }
-    }
-
-    private void closeSession(@NotNull CloseReason.CloseCode code) {
-        if (wsSession != null) {
-            try {
-                wsSession.close(new CloseReason(code, null));
-            } catch (IOException e) {
-                LOG.warn("Error closing session", e);
-            }
+    private void closeSession(int code) {
+        if (webSocket != null) {
+            webSocket.close(code, null);
         }
     }
 

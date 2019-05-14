@@ -9,7 +9,6 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.websocket.DeploymentException;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -164,11 +163,7 @@ public class Spi {
         if (secrets != null) {
             LOG.info("Starting in paired state");
             currentStatus = SpiStatus.PAIRED_CONNECTING;
-            try {
-                conn.connect(); // This is non-blocking
-            } catch (DeploymentException e) {
-                LOG.error("Failed to connect", e);
-            }
+            conn.connect(); // This is non-blocking
         } else {
             LOG.info("Starting in unpaired state");
             currentStatus = SpiStatus.UNPAIRED;
@@ -538,11 +533,7 @@ public class Spi {
 
         pairingFlowStateChanged();
 
-        try {
-            conn.connect(); // Non-Blocking
-        } catch (DeploymentException e) {
-            LOG.error("Failed to connect", e);
-        }
+        conn.connect(); // Non-Blocking
         return true;
     }
 
@@ -1727,13 +1718,9 @@ public class Spi {
 
                             if (getCurrentStatus() != SpiStatus.UNPAIRED) {
                                 // This is non-blocking
-                                try {
-                                    Connection conn = Spi.this.conn;
-                                    if (conn != null) {
-                                        conn.connect();
-                                    }
-                                } catch (DeploymentException e) {
-                                    LOG.error("Failed to connect", e);
+                                Connection conn = Spi.this.conn;
+                                if (conn != null) {
+                                    conn.connect();
                                 }
                             }
                         }
