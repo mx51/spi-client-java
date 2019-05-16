@@ -2027,7 +2027,7 @@ public class Spi {
 
                 if (addressResponse == null) {
                     DeviceAddressStatus state = new DeviceAddressStatus();
-                    state.setDeviceAddressResponseCode(DeviceAddressResponseCode.ERROR);
+                    state.setDeviceAddressResponseCode(DeviceAddressResponseCode.DEVICE_SERVICE_ERROR);
                     setCurrentDeviceStatus(state);
 
                     deviceStatusChanged(getCurrentDeviceStatus());
@@ -2035,12 +2035,21 @@ public class Spi {
                 }
 
                 if (addressResponse.getAddress() == null) {
-                    DeviceAddressStatus state = new DeviceAddressStatus();
-                    state.setDeviceAddressResponseCode(DeviceAddressResponseCode.ERROR);
-                    setCurrentDeviceStatus(state);
+                    if (addressResponse.getResponseCode() == 404) {
+                        DeviceAddressStatus state = new DeviceAddressStatus();
+                        state.setDeviceAddressResponseCode(DeviceAddressResponseCode.INVALID_SERIAL_NUMBER);
+                        setCurrentDeviceStatus(state);
 
-                    deviceStatusChanged(getCurrentDeviceStatus());
-                    return;
+                        deviceStatusChanged(getCurrentDeviceStatus());
+                        return;
+                    } else {
+                        DeviceAddressStatus state = new DeviceAddressStatus();
+                        state.setDeviceAddressResponseCode(DeviceAddressResponseCode.DEVICE_SERVICE_ERROR);
+                        setCurrentDeviceStatus(state);
+
+                        deviceStatusChanged(getCurrentDeviceStatus());
+                        return;
+                    }
                 }
 
                 if (!hasEftposAddressChanged(addressResponse.getAddress())) {

@@ -1,5 +1,6 @@
 package com.assemblypayments.spi.service;
 
+import com.assemblypayments.spi.model.DeviceAddressResponseCode;
 import com.assemblypayments.spi.model.DeviceAddressStatus;
 import com.google.gson.Gson;
 import okhttp3.*;
@@ -37,10 +38,12 @@ public class DeviceService {
                 deviceAddressStatus = gson.fromJson(response.body().string(), DeviceAddressStatus.class);
             }
 
+            deviceAddressStatus.setResponseCode(response.code());
+            deviceAddressStatus.setResponseMessage(response.message());
             return deviceAddressStatus;
         } catch (IOException ex) {
             LOG.error("DeviceAddressStatus: " + ex.getMessage());
-            return deviceAddressStatus;
+            return null;
         }
     }
 }
