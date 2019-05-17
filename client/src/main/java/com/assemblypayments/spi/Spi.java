@@ -196,6 +196,11 @@ public class Spi {
         if (hasSerialNumberChanged(was)) {
             autoResolveEftposAddress();
         } else {
+            if (getCurrentStatus() == null) {
+                DeviceAddressStatus deviceAddressStatus = new DeviceAddressStatus();
+                setCurrentDeviceStatus(deviceAddressStatus);
+            }
+
             getCurrentDeviceStatus().setDeviceAddressResponseCode(DeviceAddressResponseCode.SERIAL_NUMBER_NOT_CHANGED);
             deviceStatusChanged(getCurrentDeviceStatus());
         }
@@ -2053,7 +2058,7 @@ public class Spi {
                 }
 
                 if (!hasEftposAddressChanged(addressResponse.getAddress())) {
-                    getCurrentDeviceStatus().setDeviceAddressResponseCode(DeviceAddressResponseCode.SERIAL_NUMBER_NOT_CHANGED);
+                    getCurrentDeviceStatus().setDeviceAddressResponseCode(DeviceAddressResponseCode.ADDRESS_NOT_CHANGED);
                     deviceStatusChanged(getCurrentDeviceStatus());
                     return;
                 }
