@@ -196,11 +196,6 @@ public class Spi {
         if (hasSerialNumberChanged(was)) {
             autoResolveEftposAddress();
         } else {
-            if (getCurrentStatus() == null) {
-                DeviceAddressStatus deviceAddressStatus = new DeviceAddressStatus();
-                setCurrentDeviceStatus(deviceAddressStatus);
-            }
-
             getCurrentDeviceStatus().setDeviceAddressResponseCode(DeviceAddressResponseCode.SERIAL_NUMBER_NOT_CHANGED);
             deviceStatusChanged(getCurrentDeviceStatus());
         }
