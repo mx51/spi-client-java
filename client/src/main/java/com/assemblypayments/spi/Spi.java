@@ -2035,6 +2035,15 @@ public class Spi {
                 }
 
                 if (addressResponse.getAddress() == null) {
+                    if (addressResponse.getResponseCode() == null) {
+                        DeviceAddressStatus state = new DeviceAddressStatus();
+                        state.setDeviceAddressResponseCode(DeviceAddressResponseCode.DEVICE_SERVICE_ERROR);
+                        setCurrentDeviceStatus(state);
+
+                        deviceStatusChanged(getCurrentDeviceStatus());
+                        return;
+                    }
+
                     if (addressResponse.getResponseCode() == 404) {
                         DeviceAddressStatus state = new DeviceAddressStatus();
                         state.setDeviceAddressResponseCode(DeviceAddressResponseCode.INVALID_SERIAL_NUMBER);
