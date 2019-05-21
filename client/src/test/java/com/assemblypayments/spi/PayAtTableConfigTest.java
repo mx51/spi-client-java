@@ -95,7 +95,7 @@ public class PayAtTableConfigTest {
     @Test
     public void testSetAllowedOperatorIds() {
         PayAtTableConfig config = new PayAtTableConfig();
-        List<String> allowedStringList = new ArrayList<>();
+        List<String> allowedStringList = new ArrayList<String>();
         allowedStringList.add("1");
         allowedStringList.add("2");
         config.setAllowedOperatorIds(allowedStringList);

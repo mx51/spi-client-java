@@ -27,7 +27,7 @@ public class GetOpenTablesResponse {
 
     private List<OpenTablesEntry> getOpenTables() {
         final String openTablesData = openTablesEntryData;
-        if (openTablesData == null || StringUtils.isWhitespace(openTablesData)) return new ArrayList<>();
+        if (openTablesData == null || StringUtils.isWhitespace(openTablesData)) return new ArrayList<OpenTablesEntry>();
 
         final byte[] bdArray = Base64.decodeBase64(openTablesData);
         final String bdStr = new String(bdArray, Charsets.UTF_8);
