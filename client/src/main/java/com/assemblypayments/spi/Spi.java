@@ -2025,7 +2025,7 @@ public class Spi {
                 DeviceService deviceService = new DeviceService();
                 DeviceAddressStatus addressResponse = deviceService.retrieveService(serialNumber, deviceApiKey, acquirerCode, inTestMode);
 
-                if (addressResponse == null) {
+                if (addressResponse == null || (addressResponse.getAddress() == null && (addressResponse.getResponseCode() != 200 && addressResponse.getResponseCode() != 404))) {
                     DeviceAddressStatus state = new DeviceAddressStatus();
                     state.setDeviceAddressResponseCode(DeviceAddressResponseCode.DEVICE_SERVICE_ERROR);
                     setCurrentDeviceStatus(state);
@@ -2034,31 +2034,13 @@ public class Spi {
                     return;
                 }
 
-                if (addressResponse.getAddress() == null) {
-                    if (addressResponse.getResponseCode() == null) {
-                        DeviceAddressStatus state = new DeviceAddressStatus();
-                        state.setDeviceAddressResponseCode(DeviceAddressResponseCode.DEVICE_SERVICE_ERROR);
-                        setCurrentDeviceStatus(state);
+                if (addressResponse.getResponseCode() == 404) {
+                    DeviceAddressStatus state = new DeviceAddressStatus();
+                    state.setDeviceAddressResponseCode(DeviceAddressResponseCode.INVALID_SERIAL_NUMBER);
+                    setCurrentDeviceStatus(state);
 
-                        deviceStatusChanged(getCurrentDeviceStatus());
-                        return;
-                    }
-
-                    if (addressResponse.getResponseCode() == 404) {
-                        DeviceAddressStatus state = new DeviceAddressStatus();
-                        state.setDeviceAddressResponseCode(DeviceAddressResponseCode.INVALID_SERIAL_NUMBER);
-                        setCurrentDeviceStatus(state);
-
-                        deviceStatusChanged(getCurrentDeviceStatus());
-                        return;
-                    } else {
-                        DeviceAddressStatus state = new DeviceAddressStatus();
-                        state.setDeviceAddressResponseCode(DeviceAddressResponseCode.DEVICE_SERVICE_ERROR);
-                        setCurrentDeviceStatus(state);
-
-                        deviceStatusChanged(getCurrentDeviceStatus());
-                        return;
-                    }
+                    deviceStatusChanged(getCurrentDeviceStatus());
+                    return;
                 }
 
                 if (!hasEftposAddressChanged(addressResponse.getAddress())) {
