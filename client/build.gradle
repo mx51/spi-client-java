@@ -26,10 +26,9 @@ dependencies {
     compile 'commons-lang:commons-lang:2.6'
     compile 'commons-codec:commons-codec:1.11'
     compile 'com.google.code.gson:gson:2.8.2'
-    compile 'org.glassfish.tyrus.bundles:tyrus-standalone-client:1.13.1'
+    compile 'com.squareup.okhttp3:okhttp:3.12.3'
     compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'org.jetbrains:annotations:16.0.1'
-    compile 'com.squareup.okhttp3:okhttp:3.13.1'
 
     testCompile 'junit:junit:4.12'
 }
