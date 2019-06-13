@@ -9,7 +9,6 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.websocket.DeploymentException;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -27,7 +26,7 @@ public class Spi {
 
     private static final Logger LOG = LoggerFactory.getLogger("spi");
 
-    static final String PROTOCOL_VERSION = "2.5.0";
+    static final String PROTOCOL_VERSION = "2.6.0";
 
     private static final long RECONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(3);
     private static final long TX_MONITOR_CHECK_FREQUENCY = TimeUnit.SECONDS.toMillis(1);
@@ -136,12 +135,6 @@ public class Spi {
         return spiPat;
     }
 
-    public SpiPayAtTable disablePayAtTable() {
-        spiPat = new SpiPayAtTable(this);
-        spiPat.getConfig().setPayAtTableEnabled(false);
-        return spiPat;
-    }
-
     public SpiPreauth enablePreauth() {
         spiPreauth = new SpiPreauth(this, txLock);
         return spiPreauth;
@@ -170,11 +163,7 @@ public class Spi {
         if (secrets != null) {
             LOG.info("Starting in paired state");
             currentStatus = SpiStatus.PAIRED_CONNECTING;
-            try {
-                conn.connect(); // This is non-blocking
-            } catch (DeploymentException e) {
-                LOG.error("Failed to connect", e);
-            }
+            conn.connect(); // This is non-blocking
         } else {
             LOG.info("Starting in unpaired state");
             currentStatus = SpiStatus.UNPAIRED;
@@ -206,9 +195,16 @@ public class Spi {
 
         if (hasSerialNumberChanged(was)) {
             autoResolveEftposAddress();
+        } else {
+            getCurrentDeviceStatus().setDeviceAddressResponseCode(DeviceAddressResponseCode.SERIAL_NUMBER_NOT_CHANGED);
+            deviceStatusChanged(getCurrentDeviceStatus());
         }
 
         return true;
+    }
+
+    public String getSerialNumber() {
+        return this.serialNumber;
     }
 
     /**
@@ -225,6 +221,10 @@ public class Spi {
         }
 
         return true;
+    }
+
+    public boolean isAutoAddressResolutionEnabled() {
+        return this.autoAddressResolutionEnabled;
     }
 
     /**
@@ -308,7 +308,7 @@ public class Spi {
      *
      * @param value Status value {@link SpiStatus}.
      */
-    private void setCurrentStatus(@NotNull SpiStatus value) {
+    public void setCurrentStatus(@NotNull SpiStatus value) {
         if (currentStatus == value) return;
         currentStatus = value;
         statusChanged();
@@ -533,11 +533,7 @@ public class Spi {
 
         pairingFlowStateChanged();
 
-        try {
-            conn.connect(); // Non-Blocking
-        } catch (DeploymentException e) {
-            LOG.error("Failed to connect", e);
-        }
+        conn.connect(); // Non-Blocking
         return true;
     }
 
@@ -1722,13 +1718,9 @@ public class Spi {
 
                             if (getCurrentStatus() != SpiStatus.UNPAIRED) {
                                 // This is non-blocking
-                                try {
-                                    Connection conn = Spi.this.conn;
-                                    if (conn != null) {
-                                        conn.connect();
-                                    }
-                                } catch (DeploymentException e) {
-                                    LOG.error("Failed to connect", e);
+                                Connection conn = Spi.this.conn;
+                                if (conn != null) {
+                                    conn.connect();
                                 }
                             }
                         }
@@ -2033,11 +2025,29 @@ public class Spi {
                 DeviceService deviceService = new DeviceService();
                 DeviceAddressStatus addressResponse = deviceService.retrieveService(serialNumber, deviceApiKey, acquirerCode, inTestMode);
 
-                if (addressResponse == null) return;
+                if (addressResponse == null || (addressResponse.getAddress() == null && (addressResponse.getResponseCode() != 200 && addressResponse.getResponseCode() != 404))) {
+                    DeviceAddressStatus state = new DeviceAddressStatus();
+                    state.setDeviceAddressResponseCode(DeviceAddressResponseCode.DEVICE_SERVICE_ERROR);
+                    setCurrentDeviceStatus(state);
 
-                if (addressResponse.getAddress() == null) return;
+                    deviceStatusChanged(getCurrentDeviceStatus());
+                    return;
+                }
 
-                if (!hasEftposAddressChanged(addressResponse.getAddress())) return;
+                if (addressResponse.getResponseCode() == 404) {
+                    DeviceAddressStatus state = new DeviceAddressStatus();
+                    state.setDeviceAddressResponseCode(DeviceAddressResponseCode.INVALID_SERIAL_NUMBER);
+                    setCurrentDeviceStatus(state);
+
+                    deviceStatusChanged(getCurrentDeviceStatus());
+                    return;
+                }
+
+                if (!hasEftposAddressChanged(addressResponse.getAddress())) {
+                    getCurrentDeviceStatus().setDeviceAddressResponseCode(DeviceAddressResponseCode.ADDRESS_NOT_CHANGED);
+                    deviceStatusChanged(getCurrentDeviceStatus());
+                    return;
+                }
 
                 // update device and connection address
                 eftposAddress = "ws://" + addressResponse.getAddress();
@@ -2046,6 +2056,7 @@ public class Spi {
                 DeviceAddressStatus state = new DeviceAddressStatus();
                 state.setAddress(addressResponse.getAddress());
                 state.setLastUpdated(addressResponse.getLastUpdated());
+                state.setDeviceAddressResponseCode(DeviceAddressResponseCode.SUCCESS);
                 setCurrentDeviceStatus(state);
 
                 deviceStatusChanged(getCurrentDeviceStatus());
