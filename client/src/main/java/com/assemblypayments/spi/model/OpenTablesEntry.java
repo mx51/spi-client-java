@@ -26,6 +26,10 @@ public class OpenTablesEntry {
         return label;
     }
 
+    public void setTableId(String tableId) {
+        this.tableId = tableId;
+    }
+
     public int getBillOutstandingAmount() {
         return billOutstandingAmount;
     }
