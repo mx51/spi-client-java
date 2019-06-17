@@ -139,8 +139,15 @@ public class SpiPayAtTable {
         String operatorId = m.getDataStringValue("operator_id");
 
         GetOpenTablesResponse openTablesResponse = getOpenTablesDelegate.getOpenTables(operatorId);
-        if (openTablesResponse.getOpenTablesEntryData().length() <= 0) {
+        if (openTablesResponse.getOpenTablesEntries().size() <= 0) {
             LOG.info("There is no open table.");
+        }
+
+        for (OpenTablesEntry openTablesEntry : openTablesResponse.getOpenTablesEntries()) {
+            if (openTablesEntry.getTableId().length() > 20) {
+                LOG.info(openTablesEntry.getTableId() + " Table Id is greater than 20 characters!");
+                openTablesEntry.setTableId(openTablesEntry.getTableId().substring(0, 20));
+            }
         }
 
         spi.send(openTablesResponse.toMessage(m.getId()));

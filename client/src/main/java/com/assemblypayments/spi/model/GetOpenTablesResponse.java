@@ -13,23 +13,14 @@ import java.util.List;
 import java.util.Map;
 
 public class GetOpenTablesResponse {
-    private String openTablesEntryData;
+    private List<OpenTablesEntry> openTablesEntries;
 
     private static final Gson GSON = new GsonBuilder().create();
 
-    public String getOpenTablesEntryData() {
-        return openTablesEntryData;
-    }
-
-    public void setOpenTablesEntryData(String openTablesEntryData) {
-        this.openTablesEntryData = openTablesEntryData;
-    }
-
     private List<OpenTablesEntry> getOpenTables() {
-        final String openTablesData = openTablesEntryData;
-        if (openTablesData == null || StringUtils.isWhitespace(openTablesData)) return new ArrayList<OpenTablesEntry>();
+        if (openTablesEntries.size() == 0) return new ArrayList<>();
 
-        final byte[] bdArray = Base64.decodeBase64(openTablesData);
+        final byte[] bdArray = Base64.decodeBase64(toOpenTablesData(openTablesEntries));
         final String bdStr = new String(bdArray, Charsets.UTF_8);
         return GSON.fromJson(bdStr, OpenTablesEntry.ListType.class);
     }
@@ -45,5 +36,13 @@ public class GetOpenTablesResponse {
         final Map<String, Object> data = new HashMap<String, Object>();
         data.put("tables", getOpenTables());
         return new Message(messageId, Events.PAY_AT_TABLE_OPEN_TABLES, data, true);
+    }
+
+    public List<OpenTablesEntry> getOpenTablesEntries() {
+        return openTablesEntries;
+    }
+
+    public void setOpenTablesEntries(List<OpenTablesEntry> openTablesEntries) {
+        this.openTablesEntries = openTablesEntries;
     }
 }
