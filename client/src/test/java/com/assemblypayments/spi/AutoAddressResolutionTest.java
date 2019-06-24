@@ -2,9 +2,8 @@ package com.assemblypayments.spi;
 
 import com.assemblypayments.spi.model.DeviceAddressStatus;
 import com.assemblypayments.spi.service.DeviceService;
+import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class AutoAddressResolutionTest {
     @Test
@@ -12,7 +11,7 @@ public class AutoAddressResolutionTest {
         String serialnumber = "111-111-111";
         Spi spi = new Spi("", "", "", null);
         spi.setSerialNumber(serialnumber);
-        assertEquals(serialnumber, spi.getSerialNumber());
+        Assert.assertEquals(serialnumber, spi.getSerialNumber());
     }
 
     @Test
@@ -20,7 +19,7 @@ public class AutoAddressResolutionTest {
         boolean autoAddressResolutionEnable = true;
         Spi spi = new Spi("", "", "", null);
         spi.setAutoAddressResolution(autoAddressResolutionEnable);
-        assertEquals(autoAddressResolutionEnable, spi.isAutoAddressResolutionEnabled());
+        Assert.assertEquals(autoAddressResolutionEnable, spi.isAutoAddressResolutionEnabled());
     }
 
     @Test
@@ -32,9 +31,9 @@ public class AutoAddressResolutionTest {
         DeviceService deviceService = new DeviceService();
         DeviceAddressStatus addressResponse = deviceService.retrieveService(serialNumber, apiKey, acquirerCode, true);
 
-        assertNotNull(addressResponse);
-        assertNull(addressResponse.getAddress());
-        assertNull(addressResponse.getLastUpdated());
+        Assert.assertNotNull(addressResponse);
+        Assert.assertNull(addressResponse.getAddress());
+        Assert.assertNull(addressResponse.getLastUpdated());
     }
 
     @Test
@@ -46,8 +45,10 @@ public class AutoAddressResolutionTest {
         DeviceService deviceService = new DeviceService();
         DeviceAddressStatus addressResponse = deviceService.retrieveService(serialNumber, apiKey, acquirerCode, true);
 
-        assertNotNull(addressResponse);
-        assertNotNull(addressResponse.getAddress());
-        assertNotNull(addressResponse.getLastUpdated());
+        Assert.assertNotNull(addressResponse);
+        Assert.assertNotNull(addressResponse.getAddress());
+        Assert.assertNotNull(addressResponse.getLastUpdated());
+        Assert.assertNotNull(addressResponse.getResponseMessage());
+        Assert.assertNotNull(addressResponse.getResponseCode());
     }
 }

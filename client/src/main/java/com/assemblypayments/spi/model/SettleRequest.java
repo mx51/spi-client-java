@@ -33,8 +33,8 @@ public class SettleRequest implements Message.Compatible {
         final Map<String, Object> baseData = new HashMap<String, Object>();
 
         config.setEnabledPrintMerchantCopy(true);
-        config.setEnabledSignatureFlowOnEftpos(true);
-        config.setEnabledPromptForCustomerCopyOnEftpos(true);
+        config.setEnabledSignatureFlowOnEftpos(false);
+        config.setEnabledPromptForCustomerCopyOnEftpos(false);
         config.addReceiptConfig(baseData);
 
         if (options != null) {
