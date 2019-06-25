@@ -43,7 +43,7 @@ public class SpiPayAtTableTest {
         Message m = getOpenTablesResponse.toMessage("1234");
 
         List<Object> getOpenTablesList = m.getDataListValue("tables");
-        Assert.assertEquals(getOpenTablesList.size(), 2);
+        Assert.assertEquals(getOpenTablesList.size(), openTablesEntries.size());
         Assert.assertEquals(openTablesEntries.size(), 2);
     }
 
