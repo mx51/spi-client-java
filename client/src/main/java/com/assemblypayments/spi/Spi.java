@@ -1419,9 +1419,16 @@ public class Spi {
         }
 
         if (getCurrentFlow() != SpiFlow.TRANSACTION || currentState.isFinished() || !posRefIdMatched) {
-            final CancelTransactionResponse response = new CancelTransactionResponse(m);
-            if (!response.wasTxnPastPointOfNoReturn()) {
-                String trace = checkPosRefId ? "Incoming Pos Ref ID: " + incomingPosRefId : m.getDecryptedJson();
+            String trace = checkPosRefId ? "Incoming Pos Ref ID: " + incomingPosRefId : m.getDecryptedJson();
+
+            if (typeName.equals("Cancel")) {
+                final CancelTransactionResponse response = new CancelTransactionResponse(m);
+                if (!response.wasTxnPastPointOfNoReturn()) {
+                    LOG.info("Received " + typeName + " response but I was not waiting for one. " + trace);
+                    return true;
+                }
+            } else {
+
                 LOG.info("Received " + typeName + " response but I was not waiting for one. " + trace);
                 return true;
             }
