@@ -91,6 +91,9 @@ public class Spi {
     private final Pattern regexItemsForEftposAddress = Pattern.compile("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$");
     private final Pattern regexItemsForPosId = Pattern.compile("[a-zA-Z0-9]*$");
 
+    private int retriesSinceLastPairing = 0;
+    private final int retriesBeforePairing = 3;
+
     //endregion
 
     //region Setup methods
@@ -117,18 +120,8 @@ public class Spi {
             throw new CompatibilityException("JDK configuration incompatible with SPI", e);
         }
 
-        if (!StringUtils.isBlank(posId) & posId.length() > 16) {
-            posId = posId.substring(0, 16);
-            LOG.warn("The Pos Id should be equal or less than 16 characters! It has been truncated");
-        }
-
-        if (!StringUtils.isBlank(posId) & !regexItemsForPosId.matcher(posId).matches()) {
-            LOG.warn("The Pos Id can not include special characters!");
-        }
-
-        if (!StringUtils.isBlank(eftposAddress) & !regexItemsForEftposAddress.matcher(eftposAddress).matches()) {
-            LOG.warn("The Eftpos Address is not in correct format!");
-        }
+        posId = validatePosId(posId);
+        validateEftposAddress(eftposAddress);
 
         this.posId = posId;
         this.eftposAddress = "ws://" + eftposAddress;
@@ -267,17 +260,7 @@ public class Spi {
      */
     public boolean setPosId(@NotNull String id) {
         if (getCurrentStatus() != SpiStatus.UNPAIRED) return false;
-
-        if (!StringUtils.isBlank(id) & id.length() > 16) {
-            id = id.substring(0, 16);
-            LOG.warn("The Pos Id should be equal or less than 16 characters! It has been truncated");
-        }
-
-        if (!StringUtils.isBlank(id) & !regexItemsForPosId.matcher(id).matches()) {
-            LOG.warn("The Pos Id can not include special characters!");
-        }
-
-        posId = id;
+        posId = validatePosId(id);
         spiMessageStamp.setPosId(id);
         return true;
     }
@@ -289,11 +272,7 @@ public class Spi {
      */
     public boolean setEftposAddress(String address) {
         if (getCurrentStatus() == SpiStatus.PAIRED_CONNECTED || autoAddressResolutionEnabled) return false;
-
-        if (!StringUtils.isBlank(address) & !regexItemsForEftposAddress.matcher(address).matches()) {
-            LOG.warn("The Eftpos Address is not in correct format!");
-        }
-
+        validateEftposAddress(address);
         eftposAddress = "ws://" + address;
         conn.setAddress(eftposAddress);
         return true;
@@ -1759,10 +1738,34 @@ public class Spi {
                         }
                     }, RECONNECTION_TIMEOUT, TimeUnit.MILLISECONDS);
                 } else if (getCurrentFlow() == SpiFlow.PAIRING) {
-                    LOG.warn("Lost connection during pairing.");
-                    getCurrentPairingFlowState().setMessage("Could not Connect to Pair. Check Network and Try Again...");
-                    onPairingFailed();
-                    pairingFlowStateChanged();
+                    if (retriesSinceLastPairing < retriesBeforePairing) {
+                        LOG.info("Will try to re-pair in {}s...", RECONNECTION_TIMEOUT / 1000);
+                        cleanReconnectFuture();
+                    }
+
+                    reconnectFuture = reconnectExecutor.schedule(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (currentPairingFlowState.isFinished()) return;
+
+                            if (retriesSinceLastPairing >= retriesBeforePairing) {
+                                retriesSinceLastPairing = 0;
+                                LOG.warn("Lost connection during pairing.");
+                                onPairingFailed();
+                                pairingFlowStateChanged();
+                            } else {
+                                if (getCurrentStatus() != SpiStatus.PAIRED_CONNECTED) {
+                                    // This is non-blocking
+                                    Connection conn = Spi.this.conn;
+                                    if (conn != null) {
+                                        conn.connect();
+                                    }
+                                }
+
+                                retriesSinceLastPairing++;
+                            }
+                        }
+                    }, RECONNECTION_TIMEOUT, TimeUnit.MILLISECONDS);
                 }
                 break;
             default:
@@ -2029,6 +2032,29 @@ public class Spi {
         } else {
             LOG.debug("Asked to send, but not connected: " + message.getDecryptedJson());
             return false;
+        }
+    }
+
+    //endregion
+
+    //region Internals for connection management
+
+    private String validatePosId(String posId) {
+        if (!StringUtils.isBlank(posId) & posId.length() > 16) {
+            posId = posId.substring(0, 16);
+            LOG.warn("The Pos Id should be equal or less than 16 characters! It has been truncated");
+        }
+
+        if (!StringUtils.isBlank(posId) & !regexItemsForPosId.matcher(posId).matches()) {
+            LOG.warn("The Pos Id can not include special characters!");
+        }
+
+        return posId;
+    }
+
+    private void validateEftposAddress(String eftposAddress) {
+        if (!StringUtils.isBlank(eftposAddress) & !regexItemsForEftposAddress.matcher(eftposAddress).matches()) {
+            LOG.warn("The Eftpos Address is not in correct format!");
         }
     }
 

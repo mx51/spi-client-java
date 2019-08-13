@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 public class SpiTest {
     @Test
-    public void testSetPosIdOnValidLengthIsSet() throws Spi.CompatibilityException, IllegalAccessException {
+    public void testSetPosIdOnInvalidLengthIsSet() throws Spi.CompatibilityException, IllegalAccessException {
         // arrange
         final String posId = "12345678901234567";
         final int lengthOfPosId = 16;
@@ -27,7 +27,7 @@ public class SpiTest {
     }
 
     @Test
-    public void testSpiInitateOnValidLengthForPosIdIsSet() throws Spi.CompatibilityException, IllegalAccessException {
+    public void testSpiInitateOnInvalidLengthForPosIdIsSet() throws Spi.CompatibilityException, IllegalAccessException {
         // arrange
         final String posId = "12345678901234567";
         final int lengthOfPosId = 16;
@@ -127,5 +127,29 @@ public class SpiTest {
 
         // assert
         Assert.assertEquals(retriesBeforeResolvingDeviceAddress, SpiClientTestUtils.getInstanceField(spi, "retriesBeforeResolvingDeviceAddress"));
+    }
+
+    @Test
+    public void testRetriesBeforePairingOnValidValueChecked() throws Spi.CompatibilityException, IllegalAccessException {
+        // arrange
+        final int retriesBeforePairing = 3;
+
+        // act
+        Spi spi = new Spi("", "", "", null);
+
+        // assert
+        Assert.assertEquals(retriesBeforePairing, SpiClientTestUtils.getInstanceField(spi, "retriesBeforePairing"));
+    }
+
+    @Test
+    public void testSleepBeforeReconnectMsOnValidValueChecked() throws Spi.CompatibilityException, IllegalAccessException {
+        // arrange
+        final long sleepBeforeReconnectMs = 3000;
+
+        // act
+        Spi spi = new Spi("", "", "", null);
+
+        // assert
+        Assert.assertEquals(sleepBeforeReconnectMs, SpiClientTestUtils.getInstanceField(spi, "RECONNECTION_TIMEOUT"));
     }
 }
