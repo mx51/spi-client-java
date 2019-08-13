@@ -1428,7 +1428,6 @@ public class Spi {
                     return true;
                 }
             } else {
-
                 LOG.info("Received " + typeName + " response but I was not waiting for one. " + trace);
                 return true;
             }
