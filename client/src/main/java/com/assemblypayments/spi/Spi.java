@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  * SPI integration client, used to manage connection to the terminal.
@@ -86,6 +87,10 @@ public class Spi {
     private ScheduledFuture reconnectFuture;
 
     final SpiConfig config = new SpiConfig();
+
+    private final Pattern regexItemsForEftposAddress = Pattern.compile("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$");
+    private final Pattern regexItemsForPosId = Pattern.compile("[a-zA-Z0-9]*$");
+
     //endregion
 
     //region Setup methods
@@ -110,6 +115,14 @@ public class Spi {
             LOG.info("Compatibility check passed");
         } catch (GeneralSecurityException e) {
             throw new CompatibilityException("JDK configuration incompatible with SPI", e);
+        }
+
+        if (!StringUtils.isBlank(posId) & !regexItemsForPosId.matcher(posId).matches()) {
+            LOG.warn("The Pos Id can not include special characters!");
+        }
+
+        if (!StringUtils.isBlank(eftposAddress) & !regexItemsForEftposAddress.matcher(eftposAddress).matches()) {
+            LOG.warn("The Eftpos Address is not in correct format!");
         }
 
         this.posId = posId;
@@ -249,6 +262,11 @@ public class Spi {
      */
     public boolean setPosId(@NotNull String id) {
         if (getCurrentStatus() != SpiStatus.UNPAIRED) return false;
+
+        if (!StringUtils.isBlank(id) & !regexItemsForPosId.matcher(id).matches()) {
+            LOG.warn("The Pos Id can not include special characters!");
+        }
+
         posId = id;
         spiMessageStamp.setPosId(id);
         return true;
@@ -261,6 +279,11 @@ public class Spi {
      */
     public boolean setEftposAddress(String address) {
         if (getCurrentStatus() == SpiStatus.PAIRED_CONNECTED || autoAddressResolutionEnabled) return false;
+
+        if (!StringUtils.isBlank(address) & !regexItemsForEftposAddress.matcher(address).matches()) {
+            LOG.warn("The Eftpos Address is not in correct format!");
+        }
+
         eftposAddress = "ws://" + address;
         conn.setAddress(eftposAddress);
         return true;
