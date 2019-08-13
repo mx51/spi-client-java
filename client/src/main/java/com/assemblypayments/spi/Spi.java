@@ -117,6 +117,11 @@ public class Spi {
             throw new CompatibilityException("JDK configuration incompatible with SPI", e);
         }
 
+        if (!StringUtils.isBlank(posId) & posId.length() > 16) {
+            posId = posId.substring(0, 16);
+            LOG.warn("The Pos Id should be equal or less than 16 characters! It has been truncated");
+        }
+
         if (!StringUtils.isBlank(posId) & !regexItemsForPosId.matcher(posId).matches()) {
             LOG.warn("The Pos Id can not include special characters!");
         }
@@ -262,6 +267,11 @@ public class Spi {
      */
     public boolean setPosId(@NotNull String id) {
         if (getCurrentStatus() != SpiStatus.UNPAIRED) return false;
+
+        if (!StringUtils.isBlank(id) & id.length() > 16) {
+            id = id.substring(0, 16);
+            LOG.warn("The Pos Id should be equal or less than 16 characters! It has been truncated");
+        }
 
         if (!StringUtils.isBlank(id) & !regexItemsForPosId.matcher(id).matches()) {
             LOG.warn("The Pos Id can not include special characters!");

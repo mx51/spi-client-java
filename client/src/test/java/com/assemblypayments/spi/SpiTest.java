@@ -8,6 +8,41 @@ import java.util.regex.Pattern;
 
 public class SpiTest {
     @Test
+    public void testSetPosIdOnValidLengthIsSet() throws Spi.CompatibilityException, IllegalAccessException {
+        // arrange
+        final String posId = "12345678901234567";
+        final int lengthOfPosId = 16;
+        Spi spi = new Spi("", "", "", null);
+        MessageStamp messageStamp = new MessageStamp("", null, 0);
+        SpiClientTestUtils.setInstanceField(spi, "currentStatus", SpiStatus.UNPAIRED);
+        SpiClientTestUtils.setInstanceField(spi, "spiMessageStamp", messageStamp);
+
+        // act
+        spi.setPosId(posId);
+        Object value = SpiClientTestUtils.getInstanceField(spi, "posId");
+
+        // assert
+        Assert.assertNotEquals(posId, String.valueOf(value));
+        Assert.assertEquals(lengthOfPosId, String.valueOf(value).length());
+    }
+
+    @Test
+    public void testSpiInitateOnValidLengthForPosIdIsSet() throws Spi.CompatibilityException, IllegalAccessException {
+        // arrange
+        final String posId = "12345678901234567";
+        final int lengthOfPosId = 16;
+        Spi spi = new Spi(posId, "", "", null);
+        SpiClientTestUtils.setInstanceField(spi, "currentStatus", SpiStatus.UNPAIRED);
+
+        // act
+        Object value = SpiClientTestUtils.getInstanceField(spi, "posId");
+
+        // assert
+        Assert.assertNotEquals(posId, String.valueOf(value));
+        Assert.assertEquals(lengthOfPosId, String.valueOf(value).length());
+    }
+
+    @Test
     public void testSetPosIdOnValidCharactersIsSet() throws Spi.CompatibilityException, IllegalAccessException {
         // arrange
         final String posId = "RamenPos@";
