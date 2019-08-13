@@ -38,7 +38,7 @@ public class SpiPayAtTableTest {
     }
 
     @Test
-    public void GetOpenTables_OnValidResponseNull_IsSet() {
+    public void testGetOpenTablesOnValidResponseNullIsSet() {
         // arrange
         GetOpenTablesResponse getOpenTablesResponse = new GetOpenTablesResponse();
 

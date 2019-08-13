@@ -88,9 +88,6 @@ public class Spi {
 
     final SpiConfig config = new SpiConfig();
 
-    private final Pattern regexItemsForEftposAddress = Pattern.compile("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$");
-    private final Pattern regexItemsForPosId = Pattern.compile("[a-zA-Z0-9]*$");
-
     private int retriesSinceLastPairing = 0;
     private final int retriesBeforePairing = 3;
 
@@ -2043,6 +2040,8 @@ public class Spi {
     //region Internals for validations
 
     private String validatePosId(String posId) {
+        final Pattern regexItemsForPosId = Pattern.compile("[a-zA-Z0-9]*$");
+
         if (!StringUtils.isBlank(posId) & posId.length() > 16) {
             posId = posId.substring(0, 16);
             LOG.warn("The Pos Id should be equal or less than 16 characters! It has been truncated");
@@ -2056,6 +2055,8 @@ public class Spi {
     }
 
     private void validateEftposAddress(String eftposAddress) {
+        final Pattern regexItemsForEftposAddress = Pattern.compile("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$");
+
         if (!StringUtils.isBlank(eftposAddress) & !regexItemsForEftposAddress.matcher(eftposAddress).matches()) {
             LOG.warn("The Eftpos Address is not in correct format!");
         }
