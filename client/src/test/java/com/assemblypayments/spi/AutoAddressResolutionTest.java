@@ -4,6 +4,8 @@ import com.assemblypayments.spi.model.DeviceAddressStatus;
 import com.assemblypayments.spi.service.DeviceService;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.junit.Assert.*;
 
 public class AutoAddressResolutionTest {
@@ -49,5 +51,17 @@ public class AutoAddressResolutionTest {
         assertNotNull(addressResponse);
         assertNotNull(addressResponse.getAddress());
         assertNotNull(addressResponse.getLastUpdated());
+    }
+
+    @Test
+    public void testConnectionTimeoutOnValidValueChecked() throws IllegalAccessException {
+        // arrange
+        final long connectionTimeout = TimeUnit.SECONDS.toMillis(8);
+
+        // act
+        DeviceService deviceService = new DeviceService();
+
+        // assert
+        assertEquals(connectionTimeout, SpiClientTestUtils.getInstanceField(deviceService, "CONNECTION_TIMEOUT"));
     }
 }
