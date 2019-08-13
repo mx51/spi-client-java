@@ -2037,7 +2037,7 @@ public class Spi {
 
     //endregion
 
-    //region Internals for connection management
+    //region Internals for validations
 
     private String validatePosId(String posId) {
         if (!StringUtils.isBlank(posId) & posId.length() > 16) {

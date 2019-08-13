@@ -1,12 +1,13 @@
 package com.assemblypayments.spi;
 
-import com.assemblypayments.spi.model.BillRetrievalResult;
-import com.assemblypayments.spi.model.BillStatusResponse;
-import com.assemblypayments.spi.model.Message;
+import com.assemblypayments.spi.model.*;
+import org.junit.Assert;
 import org.junit.Test;
 
-public class SpiPayAtTableTest {
+import java.util.ArrayList;
+import java.util.List;
 
+public class SpiPayAtTableTest {
     @Test
     public void testBillStatusResponseToMessage() {
         BillStatusResponse a = new BillStatusResponse();
@@ -19,6 +20,34 @@ public class SpiPayAtTableTest {
 
         Message m = a.toMessage("d");
         int i = 1;
+    }
+
+    @Test
+    public void testGetOpenTablesOnValidResponseIsSet() {
+        // arrange
+        List<OpenTablesEntry> openTablesEntries = new ArrayList<>();
+        OpenTablesEntry openTablesEntry = new OpenTablesEntry("1", "1", 2000);
+        openTablesEntries.add(openTablesEntry);
+
+        // act
+        GetOpenTablesResponse getOpenTablesResponse = new GetOpenTablesResponse();
+        getOpenTablesResponse.setOpenTablesEntries(openTablesEntries);
+
+        // assert
+        Assert.assertEquals(openTablesEntries.size(), getOpenTablesResponse.getOpenTablesEntries().size());
+    }
+
+    @Test
+    public void GetOpenTables_OnValidResponseNull_IsSet() {
+        // arrange
+        GetOpenTablesResponse getOpenTablesResponse = new GetOpenTablesResponse();
+
+        // act
+        List<OpenTablesEntry> openTablesEntriesResponse = getOpenTablesResponse.getOpenTables();
+
+        // assert
+        Assert.assertNotNull(openTablesEntriesResponse);
+        Assert.assertNull(getOpenTablesResponse.getOpenTablesEntries());
     }
 
 }
