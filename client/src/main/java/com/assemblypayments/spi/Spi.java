@@ -76,7 +76,7 @@ public class Spi {
 
     private final Object txLock = new Object();
     private final long missedPongsToDisconnect = 2;
-    private final int retriesBeforeResolvingDeviceAddress = 5;
+    private final int retriesBeforeResolvingDeviceAddress = 3;
 
     private SpiPayAtTable spiPat;
 
