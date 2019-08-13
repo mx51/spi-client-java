@@ -28,4 +28,8 @@ public class CancelTransactionResponse {
     public String getResponseValueWithAttribute(String attribute) {
         return m.getDataStringValue(attribute);
     }
+
+    public boolean wasTxnPastPointOfNoReturn() {
+        return m.getError().startsWith("TXN_PAST_POINT_OF_NO_RETURN");
+    }
 }

@@ -1422,9 +1422,12 @@ public class Spi {
         }
 
         if (getCurrentFlow() != SpiFlow.TRANSACTION || currentState.isFinished() || !posRefIdMatched) {
-            String trace = checkPosRefId ? "Incoming Pos Ref ID: " + incomingPosRefId : m.getDecryptedJson();
-            LOG.info("Received " + typeName + " response but I was not waiting for one. " + trace);
-            return true;
+            final CancelTransactionResponse response = new CancelTransactionResponse(m);
+            if (!response.wasTxnPastPointOfNoReturn()) {
+                String trace = checkPosRefId ? "Incoming Pos Ref ID: " + incomingPosRefId : m.getDecryptedJson();
+                LOG.info("Received " + typeName + " response but I was not waiting for one. " + trace);
+                return true;
+            }
         }
         return false;
     }
