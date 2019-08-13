@@ -57,7 +57,7 @@ public class SpiTest {
         // act
         spi.setEftposAddress(eftposAddress);
         Object value = SpiClientTestUtils.getInstanceField(spi, "eftposAddress");
-        value = String.valueOf(value).substring(5);
+        value = String.valueOf(value).replaceAll("ws://", "");
 
         // assert
         Assert.assertFalse(regexItemsForEftposAddress.matcher(eftposAddress).matches());
@@ -74,7 +74,7 @@ public class SpiTest {
         SpiClientTestUtils.setInstanceField(spi, "currentStatus", SpiStatus.UNPAIRED);
 
         Object value = SpiClientTestUtils.getInstanceField(spi, "eftposAddress");
-        value = String.valueOf(value).substring(5);
+        value = String.valueOf(value).replaceAll("ws://", "");
 
         // assert
         Assert.assertFalse(regexItemsForEftposAddress.matcher(eftposAddress).matches());
