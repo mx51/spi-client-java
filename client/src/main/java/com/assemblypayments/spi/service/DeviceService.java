@@ -12,12 +12,13 @@ public class DeviceService {
 
     private static final Logger LOG = LoggerFactory.getLogger("spi");
     private Gson gson = new Gson();
-    private OkHttpClient.Builder okHttpClient;
-    private static final long CONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(8);
+    private OkHttpClient okHttpClient;
+    private static final long CONNECTION_TIMEOUT_SECS = 8;
 
     public DeviceService() {
         okHttpClient = new OkHttpClient.Builder()
-                .connectTimeout(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS);
+                .connectTimeout(CONNECTION_TIMEOUT_SECS, TimeUnit.SECONDS)
+                .build();
     }
 
     public DeviceAddressStatus retrieveService(String serialNumber, String apiKey, String acquirerCode, boolean isTestMode) {
@@ -38,7 +39,7 @@ public class DeviceService {
                     .addHeader("ASM-MSP-DEVICE-ADDRESS-API-KEY", apiKey)
                     .build();
 
-            Response response = okHttpClient.build().newCall(request).execute();
+            Response response = okHttpClient.newCall(request).execute();
 
             if (response.body() != null) {
                 deviceAddressStatus = gson.fromJson(response.body().string(), DeviceAddressStatus.class);

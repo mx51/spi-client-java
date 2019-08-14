@@ -116,40 +116,4 @@ public class SpiTest {
         Assert.assertEquals(eftposAddress, value);
         Assert.assertEquals(regexItemsForEftposAddress.matcher(eftposAddress).matches(), regexItemsForEftposAddress.matcher(String.valueOf(value)).matches());
     }
-
-    @Test
-    public void testRetriesBeforeResolvingDeviceAddressOnValidValueChecked() throws Spi.CompatibilityException, IllegalAccessException {
-        // arrange
-        final int retriesBeforeResolvingDeviceAddress = 3;
-
-        // act
-        Spi spi = new Spi("", "", "", null);
-
-        // assert
-        Assert.assertEquals(retriesBeforeResolvingDeviceAddress, SpiClientTestUtils.getInstanceField(spi, "retriesBeforeResolvingDeviceAddress"));
-    }
-
-    @Test
-    public void testRetriesBeforePairingOnValidValueChecked() throws Spi.CompatibilityException, IllegalAccessException {
-        // arrange
-        final int retriesBeforePairing = 3;
-
-        // act
-        Spi spi = new Spi("", "", "", null);
-
-        // assert
-        Assert.assertEquals(retriesBeforePairing, SpiClientTestUtils.getInstanceField(spi, "retriesBeforePairing"));
-    }
-
-    @Test
-    public void testSleepBeforeReconnectMsOnValidValueChecked() throws Spi.CompatibilityException, IllegalAccessException {
-        // arrange
-        final long sleepBeforeReconnectMs = 3000;
-
-        // act
-        Spi spi = new Spi("", "", "", null);
-
-        // assert
-        Assert.assertEquals(sleepBeforeReconnectMs, SpiClientTestUtils.getInstanceField(spi, "RECONNECTION_TIMEOUT"));
-    }
 }

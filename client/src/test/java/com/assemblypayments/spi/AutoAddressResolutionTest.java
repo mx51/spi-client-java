@@ -52,16 +52,4 @@ public class AutoAddressResolutionTest {
         assertNotNull(addressResponse.getAddress());
         assertNotNull(addressResponse.getLastUpdated());
     }
-
-    @Test
-    public void testConnectionTimeoutOnValidValueChecked() throws IllegalAccessException {
-        // arrange
-        final long connectionTimeout = TimeUnit.SECONDS.toMillis(8);
-
-        // act
-        DeviceService deviceService = new DeviceService();
-
-        // assert
-        assertEquals(connectionTimeout, SpiClientTestUtils.getInstanceField(deviceService, "CONNECTION_TIMEOUT"));
-    }
 }

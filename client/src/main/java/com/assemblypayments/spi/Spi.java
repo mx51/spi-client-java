@@ -35,6 +35,10 @@ public class Spi {
     private static final long MAX_WAIT_FOR_CANCEL_TX = TimeUnit.SECONDS.toMillis(10);
     private static final long PONG_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long PING_FREQUENCY = TimeUnit.SECONDS.toMillis(18);
+    private static final int RETRIES_BEFORE_PAIRING = 3;
+
+    private static final Pattern REGEX_ITEMS_FOR_POSID = Pattern.compile("[a-zA-Z0-9]*$");
+    private static final Pattern REGEX_ITEMS_FOR_EFTPOSADDRESS = Pattern.compile("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$");
 
     private String posId;
     private String eftposAddress;
@@ -89,7 +93,6 @@ public class Spi {
     final SpiConfig config = new SpiConfig();
 
     private int retriesSinceLastPairing = 0;
-    private final int retriesBeforePairing = 3;
 
     //endregion
 
@@ -1744,7 +1747,7 @@ public class Spi {
                         }
                     }, RECONNECTION_TIMEOUT, TimeUnit.MILLISECONDS);
                 } else if (getCurrentFlow() == SpiFlow.PAIRING) {
-                    if (retriesSinceLastPairing < retriesBeforePairing) {
+                    if (retriesSinceLastPairing < RETRIES_BEFORE_PAIRING) {
                         LOG.info("Will try to re-pair in {}s...", RECONNECTION_TIMEOUT / 1000);
                         cleanReconnectFuture();
                     }
@@ -1754,7 +1757,7 @@ public class Spi {
                         public void run() {
                             if (currentPairingFlowState.isFinished()) return;
 
-                            if (retriesSinceLastPairing >= retriesBeforePairing) {
+                            if (retriesSinceLastPairing >= RETRIES_BEFORE_PAIRING) {
                                 retriesSinceLastPairing = 0;
                                 LOG.warn("Lost connection during pairing.");
                                 onPairingFailed();
@@ -2046,14 +2049,12 @@ public class Spi {
     //region Internals for validations
 
     private String validatePosId(String posId) {
-        final Pattern regexItemsForPosId = Pattern.compile("[a-zA-Z0-9]*$");
-
         if (!StringUtils.isBlank(posId) & posId.length() > 16) {
             posId = posId.substring(0, 16);
             LOG.warn("The Pos Id should be equal or less than 16 characters! It has been truncated");
         }
 
-        if (!StringUtils.isBlank(posId) & !regexItemsForPosId.matcher(posId).matches()) {
+        if (!StringUtils.isBlank(posId) & !REGEX_ITEMS_FOR_POSID.matcher(posId).matches()) {
             LOG.warn("The Pos Id can not include special characters!");
         }
 
@@ -2061,9 +2062,7 @@ public class Spi {
     }
 
     private void validateEftposAddress(String eftposAddress) {
-        final Pattern regexItemsForEftposAddress = Pattern.compile("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$");
-
-        if (!StringUtils.isBlank(eftposAddress) & !regexItemsForEftposAddress.matcher(eftposAddress).matches()) {
+        if (!StringUtils.isBlank(eftposAddress) & !REGEX_ITEMS_FOR_EFTPOSADDRESS.matcher(eftposAddress).matches()) {
             LOG.warn("The Eftpos Address is not in correct format!");
         }
     }
