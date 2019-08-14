@@ -36,26 +36,27 @@ public class Spi {
     private static final long PONG_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long PING_FREQUENCY = TimeUnit.SECONDS.toMillis(18);
     private static final int RETRIES_BEFORE_PAIRING = 3;
+    private static final int RETRIES_BEFORE_RESOLVING_DEVICE_ADDRESS = 3;
 
     private static final Pattern REGEX_ITEMS_FOR_POSID = Pattern.compile("[a-zA-Z0-9]*$");
     private static final Pattern REGEX_ITEMS_FOR_EFTPOSADDRESS = Pattern.compile("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$");
 
-    private String posId;
-    private String eftposAddress;
+    String posId;
+    String eftposAddress;
     private String serialNumber;
     private String deviceApiKey;
     private String acquirerCode;
     private boolean inTestMode;
     private boolean autoAddressResolutionEnabled;
     private Secrets secrets;
-    private MessageStamp spiMessageStamp;
+    MessageStamp spiMessageStamp;
     private String posVendorId;
     private String posVersion;
     private boolean hasSetInfo;
 
-    private Connection conn;
+    Connection conn;
 
-    private SpiStatus currentStatus;
+    SpiStatus currentStatus;
     private SpiFlow currentFlow;
     private PairingFlowState currentPairingFlowState;
     private TransactionFlowState currentTxFlowState;
@@ -81,7 +82,6 @@ public class Spi {
 
     private final Object txLock = new Object();
     private final long missedPongsToDisconnect = 2;
-    private final int retriesBeforeResolvingDeviceAddress = 3;
 
     private SpiPayAtTable spiPat;
 
@@ -1729,7 +1729,7 @@ public class Spi {
                         @Override
                         public void run() {
                             if (autoAddressResolutionEnabled) {
-                                if (retriesSinceLastDeviceAddressResolution >= retriesBeforeResolvingDeviceAddress) {
+                                if (retriesSinceLastDeviceAddressResolution >= RETRIES_BEFORE_RESOLVING_DEVICE_ADDRESS) {
                                     autoResolveEftposAddress();
                                     retriesSinceLastDeviceAddressResolution = 0;
                                 } else {

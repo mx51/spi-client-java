@@ -11,12 +11,12 @@ import java.util.concurrent.TimeUnit;
 public class DeviceService {
 
     private static final Logger LOG = LoggerFactory.getLogger("spi");
-    private Gson gson = new Gson();
-    private OkHttpClient okHttpClient;
+    private static final Gson GSON = new Gson();
+    private final OkHttpClient OK_HTTP_CLIENT;
     private static final long CONNECTION_TIMEOUT_SECS = 8;
 
     public DeviceService() {
-        okHttpClient = new OkHttpClient.Builder()
+        OK_HTTP_CLIENT = new OkHttpClient.Builder()
                 .connectTimeout(CONNECTION_TIMEOUT_SECS, TimeUnit.SECONDS)
                 .build();
     }
@@ -39,10 +39,10 @@ public class DeviceService {
                     .addHeader("ASM-MSP-DEVICE-ADDRESS-API-KEY", apiKey)
                     .build();
 
-            Response response = okHttpClient.newCall(request).execute();
+            Response response = OK_HTTP_CLIENT.newCall(request).execute();
 
             if (response.body() != null) {
-                deviceAddressStatus = gson.fromJson(response.body().string(), DeviceAddressStatus.class);
+                deviceAddressStatus = GSON.fromJson(response.body().string(), DeviceAddressStatus.class);
             }
 
             deviceAddressStatus.setResponseCode(response.code());
