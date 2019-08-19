@@ -261,7 +261,7 @@ public class Spi {
     public boolean setPosId(@NotNull String id) {
         if (getCurrentStatus() != SpiStatus.UNPAIRED) return false;
         posId = validatePosId(id);
-        spiMessageStamp.setPosId(id);
+        spiMessageStamp.setPosId(posId);
         return true;
     }
 
