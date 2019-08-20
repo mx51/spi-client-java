@@ -13,7 +13,7 @@ public class SpiPayAtTable {
 
     private static final Logger LOG = LoggerFactory.getLogger("spipat");
 
-    private final Spi spi;
+    final Spi spi;
 
     private final PayAtTableConfig config;
 

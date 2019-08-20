@@ -61,7 +61,7 @@ public class PreauthTest {
 
         Assert.assertEquals(msg.getEventName(), "preauth");
         Assert.assertEquals(request.getPosRefId(), msg.getDataStringValue("pos_ref_id"));
-        Assert.assertEquals(SpiClientTestUtils.getInstanceField(request, "preauthAmount"), msg.getDataIntValue("preauth_amount"));
+        Assert.assertEquals(preauthAmount, msg.getDataIntValue("preauth_amount"));
     }
 
     @Test

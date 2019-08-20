@@ -69,16 +69,14 @@ public class SpiPayAtTableTest {
     }
 
     @Test
-    public void testSpiPayAtTable() throws Spi.CompatibilityException, IllegalAccessException {
+    public void testSpiPayAtTable() throws Spi.CompatibilityException {
         Spi spi = new Spi("", "", "", null);
         SpiPayAtTable spiPay = new SpiPayAtTable(spi);
-        Assert.assertNotNull(spiPay.getConfig());
 
-        Spi spi2 = (Spi) SpiClientTestUtils.getInstanceField(spiPay, "spi");
-        Assert.assertEquals(spi.getCurrentStatus(), spi2.getCurrentStatus());
+        Assert.assertNotNull(spiPay.getConfig());
+        Assert.assertEquals(spi.getCurrentStatus(), spiPay.spi.getCurrentStatus());
 
         spiPay = new SpiPayAtTable(null);
-        Spi spi3 = (Spi) SpiClientTestUtils.getInstanceField(spiPay, "spi");
-        Assert.assertNull(spi3);
+        Assert.assertNull(spiPay.spi);
     }
 }
