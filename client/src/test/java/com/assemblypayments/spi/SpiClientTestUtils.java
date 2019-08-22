@@ -4,11 +4,13 @@ import com.assemblypayments.spi.model.Secrets;
 
 import java.lang.reflect.Field;
 
-class SpiClientTestUtils {
+public class SpiClientTestUtils {
 
-    static Object getInstanceField(Object instance, String fieldName) throws IllegalAccessException, IllegalArgumentException {
+    public static Object getInstanceField(Object instance, String fieldName) throws IllegalAccessException, IllegalArgumentException {
         Class<?> secretClass = instance.getClass();
+        // Print all the field names & values
         Field fields[] = secretClass.getDeclaredFields();
+        System.out.println("Access all the fields");
         for (Field field : fields) {
             if (field.getName().equals(fieldName)) {
                 field.setAccessible(true);
@@ -19,9 +21,11 @@ class SpiClientTestUtils {
         return null;
     }
 
-    static void setInstanceField(Object instance, String fieldName, Object fieldValue) throws IllegalAccessException, IllegalArgumentException {
+    public static void setInstanceField(Object instance, String fieldName, Object fieldValue) throws IllegalAccessException, IllegalArgumentException {
         Class<?> secretClass = instance.getClass();
+        // Print all the field names & values
         Field fields[] = secretClass.getDeclaredFields();
+        System.out.println("Access all the fields");
         for (Field field : fields) {
             if (field.getName().equals(fieldName)) {
                 field.setAccessible(true);
@@ -31,7 +35,7 @@ class SpiClientTestUtils {
         }
     }
 
-    static Secrets setTestSecrets(String encKey, String hmacKey) {
+    public static Secrets setTestSecrets(String encKey, String hmacKey) {
         if (encKey == null & hmacKey == null) {
             encKey = "81CF9E6A14CDAF244A30B298D4CECB505C730CE352C6AF6E1DE61B3232E24D3F";
             hmacKey = "D35060723C9EECDB8AEA019581381CB08F64469FC61A5A04FE553EBDB5CD55B9";

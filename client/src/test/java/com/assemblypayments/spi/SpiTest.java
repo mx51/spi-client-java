@@ -105,4 +105,28 @@ public class SpiTest {
         Assert.assertEquals(eftposAddress, spiEftposAddress);
         Assert.assertEquals(regexItemsForEftposAddress.matcher(eftposAddress).matches(), regexItemsForEftposAddress.matcher(spiEftposAddress).matches());
     }
+
+    @Test
+    public void testSubmitAuthCode() throws Spi.CompatibilityException {
+        String authCode = "123456";
+        boolean expectedValidFormat = false;
+        String expectedMessage = "Was not waiting for one.";
+        Spi spi = new Spi("", "", "", null);
+        SubmitAuthCodeResult submitAuthCodeResult = spi.submitAuthCode(authCode);
+
+        Assert.assertEquals(submitAuthCodeResult.isValidFormat(), expectedValidFormat);
+        Assert.assertEquals(submitAuthCodeResult.getMessage(), expectedMessage);
+    }
+
+    @Test
+    public void testSubmitAuthCode_Length() throws Spi.CompatibilityException {
+        String authCode = "1234567";
+        boolean expectedValidFormat = false;
+        String expectedMessage = "Not a 6-digit code.";
+        Spi spi = new Spi("", "", "", null);
+        SubmitAuthCodeResult submitAuthCodeResult = spi.submitAuthCode(authCode);
+
+        Assert.assertEquals(submitAuthCodeResult.isValidFormat(), expectedValidFormat);
+        Assert.assertEquals(submitAuthCodeResult.getMessage(), expectedMessage);
+    }
 }

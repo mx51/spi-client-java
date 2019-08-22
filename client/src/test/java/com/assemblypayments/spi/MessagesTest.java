@@ -1,16 +1,12 @@
 package com.assemblypayments.spi;
 
-import com.assemblypayments.spi.model.Message;
-import com.assemblypayments.spi.model.MessageStamp;
-import com.assemblypayments.spi.model.Secrets;
+import com.assemblypayments.spi.model.*;
 import com.assemblypayments.spi.util.Events;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class MessagesTest {
 
@@ -23,9 +19,9 @@ public class MessagesTest {
         Message m = Message.fromJson(msgJsonStr, null);
 
         // And test that it's what we expected
-        assertNotNull(m);
-        assertEquals("event_x", m.getEventName());
-        assertEquals("value1", m.getData().get("param1"));
+        Assert.assertNotNull(m);
+        Assert.assertEquals("event_x", m.getEventName());
+        Assert.assertEquals("value1", m.getData().get("param1"));
     }
 
     @Test
@@ -40,9 +36,9 @@ public class MessagesTest {
         Message m = Message.fromJson(msgJsonStr, secrets);
 
         // And test that it's what we expected
-        assertNotNull(m);
-        assertEquals("pong", m.getEventName());
-        assertEquals("2017-11-16T21:51:50.499", m.getDateTimeStamp());
+        Assert.assertNotNull(m);
+        Assert.assertEquals("pong", m.getEventName());
+        Assert.assertEquals("2017-11-16T21:51:50.499", m.getDateTimeStamp());
     }
 
     @Test
@@ -55,8 +51,8 @@ public class MessagesTest {
 
         // Let's parse it
         Message m = Message.fromJson(msgJsonStr, secrets);
-        assertNotNull(m);
-        assertEquals(Events.INVALID_HMAC_SIGNATURE, m.getEventName());
+        Assert.assertNotNull(m);
+        Assert.assertEquals(Events.INVALID_HMAC_SIGNATURE, m.getEventName());
     }
 
     @Test
@@ -71,9 +67,9 @@ public class MessagesTest {
 
         // Let's assert Serialize Result by parsing it back.
         Message revertedM = Message.fromJson(mJson, null);
-        assertNotNull(revertedM);
-        assertEquals("event_y", revertedM.getEventName());
-        assertEquals("value1", revertedM.getData().get("param1"));
+        Assert.assertNotNull(revertedM);
+        Assert.assertEquals("event_y", revertedM.getEventName());
+        Assert.assertEquals("value1", revertedM.getData().get("param1"));
     }
 
     @Test
@@ -92,9 +88,9 @@ public class MessagesTest {
 
         // Let's assert Serialize Result by parsing it back.
         Message revertedM = Message.fromJson(mJson, secrets);
-        assertNotNull(revertedM);
-        assertEquals("ping", revertedM.getEventName());
-        assertEquals("value1", revertedM.getData().get("param1"));
+        Assert.assertNotNull(revertedM);
+        Assert.assertEquals("ping", revertedM.getEventName());
+        Assert.assertEquals("value1", revertedM.getData().get("param1"));
     }
 
 }

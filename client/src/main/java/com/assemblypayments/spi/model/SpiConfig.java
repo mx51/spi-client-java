@@ -73,7 +73,7 @@ public class SpiConfig {
         if (isSignatureFlowOnEftpos() && isEnabledSignatureFlowOnEftpos()) {
             messageData.put("print_for_signature_required_transactions", true);
         }
-        if (isPrintMerchantCopy() && isPrintMerchantCopy()) {
+        if (isPrintMerchantCopy() && isEnabledPrintMerchantCopy()) {
             messageData.put("print_merchant_copy", true);
         }
 

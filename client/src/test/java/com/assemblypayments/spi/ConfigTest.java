@@ -1,17 +1,15 @@
 package com.assemblypayments.spi;
 
+import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class ConfigTest {
 
     @Test
     public void testVersion() {
         String version = Spi.getVersion();
-        assertNotNull(version);
-        assertNotEquals(0, version.length());
+        Assert.assertNotNull(version);
+        Assert.assertNotEquals(0, version.length());
     }
 
 }

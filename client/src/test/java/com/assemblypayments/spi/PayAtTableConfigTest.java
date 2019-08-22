@@ -1,13 +1,11 @@
 package com.assemblypayments.spi;
 
-import com.assemblypayments.spi.model.Message;
-import com.assemblypayments.spi.model.PayAtTableConfig;
+import com.assemblypayments.spi.model.*;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.Assert.assertEquals;
 
 public class PayAtTableConfigTest {
 
@@ -17,7 +15,7 @@ public class PayAtTableConfigTest {
         config.setPayAtTableEnabled(true);
 
         Message msg = config.toMessage("111");
-        assertEquals(config.isPayAtTableEnabled(), msg.getDataBooleanValue("pay_at_table_enabled", false));
+        Assert.assertEquals(config.isPayAtTableEnabled(), msg.getDataBooleanValue("pay_at_table_enabled", false));
     }
 
     @Test
@@ -26,7 +24,7 @@ public class PayAtTableConfigTest {
         config.setOperatorIdEnabled(true);
 
         Message msg = config.toMessage("111");
-        assertEquals(config.isOperatorIdEnabled(), msg.getDataBooleanValue("operator_id_enabled", false));
+        Assert.assertEquals(config.isOperatorIdEnabled(), msg.getDataBooleanValue("operator_id_enabled", false));
     }
 
     @Test
@@ -35,7 +33,7 @@ public class PayAtTableConfigTest {
         config.setSplitByAmountEnabled(true);
 
         Message msg = config.toMessage("111");
-        assertEquals(config.isSplitByAmountEnabled(), msg.getDataBooleanValue("split_by_amount_enabled", false));
+        Assert.assertEquals(config.isSplitByAmountEnabled(), msg.getDataBooleanValue("split_by_amount_enabled", false));
     }
 
     @Test
@@ -44,7 +42,7 @@ public class PayAtTableConfigTest {
         config.setEqualSplitEnabled(true);
 
         Message msg = config.toMessage("111");
-        assertEquals(config.isEqualSplitEnabled(), msg.getDataBooleanValue("equal_split_enabled", false));
+        Assert.assertEquals(config.isEqualSplitEnabled(), msg.getDataBooleanValue("equal_split_enabled", false));
     }
 
     @Test
@@ -53,7 +51,7 @@ public class PayAtTableConfigTest {
         config.setTippingEnabled(true);
 
         Message msg = config.toMessage("111");
-        assertEquals(config.isTippingEnabled(), msg.getDataBooleanValue("tipping_enabled", false));
+        Assert.assertEquals(config.isTippingEnabled(), msg.getDataBooleanValue("tipping_enabled", false));
     }
 
     @Test
@@ -62,7 +60,7 @@ public class PayAtTableConfigTest {
         config.setSummaryReportEnabled(true);
 
         Message msg = config.toMessage("111");
-        assertEquals(config.isSummaryReportEnabled(), msg.getDataBooleanValue("summary_report_enabled", false));
+        Assert.assertEquals(config.isSummaryReportEnabled(), msg.getDataBooleanValue("summary_report_enabled", false));
     }
 
     @Test
@@ -71,7 +69,7 @@ public class PayAtTableConfigTest {
         config.setLabelPayButton("PAT");
 
         Message msg = config.toMessage("111");
-        assertEquals(config.getLabelPayButton(), msg.getDataStringValue("pay_button_label"));
+        Assert.assertEquals(config.getLabelPayButton(), msg.getDataStringValue("pay_button_label"));
     }
 
     @Test
@@ -80,7 +78,7 @@ public class PayAtTableConfigTest {
         config.setLabelOperatorId("12");
 
         Message msg = config.toMessage("111");
-        assertEquals(config.getLabelOperatorId(), msg.getDataStringValue("operator_id_label"));
+        Assert.assertEquals(config.getLabelOperatorId(), msg.getDataStringValue("operator_id_label"));
     }
 
     @Test
@@ -89,7 +87,7 @@ public class PayAtTableConfigTest {
         config.setLabelTableId("12");
 
         Message msg = config.toMessage("111");
-        assertEquals(config.getLabelTableId(), msg.getDataStringValue("table_id_label"));
+        Assert.assertEquals(config.getLabelTableId(), msg.getDataStringValue("table_id_label"));
     }
 
     @Test
@@ -101,8 +99,8 @@ public class PayAtTableConfigTest {
         config.setAllowedOperatorIds(allowedStringList);
 
         Message msg = config.toMessage("111");
-        assertEquals(config.getAllowedOperatorIds(), msg.getDataListValue("operator_id_list"));
-        assertEquals(config.getAllowedOperatorIds().size(), 2);
+        Assert.assertEquals(config.getAllowedOperatorIds(), msg.getDataListValue("operator_id_list"));
+        Assert.assertEquals(config.getAllowedOperatorIds().size(), 2);
     }
 
     @Test
@@ -111,6 +109,15 @@ public class PayAtTableConfigTest {
         config.setTableRetrievalEnabled(true);
 
         Message msg = config.toMessage("111");
-        assertEquals(config.isTableRetrievalEnabled(), msg.getDataBooleanValue("table_retrieval_enabled", false));
+        Assert.assertEquals(config.isTableRetrievalEnabled(), msg.getDataBooleanValue("table_retrieval_enabled", false));
+    }
+
+    @Test
+    public void testFeatureDisableMessage() {
+        PayAtTableConfig config = new PayAtTableConfig();
+        Message msg = PayAtTableConfig.featureDisableMessage("111");
+
+        Assert.assertFalse(config.isPayAtTableEnabled());
+        Assert.assertEquals(msg.getEventName(), "set_table_config");
     }
 }
