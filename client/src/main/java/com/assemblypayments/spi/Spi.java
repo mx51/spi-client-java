@@ -2073,17 +2073,17 @@ public class Spi {
 
     private boolean isPosIdValid(String posId) {
         if (StringUtils.isBlank(posId)) {
-            LOG.warn("Pos Id cannot be null or empty!");
+            LOG.warn("Pos Id cannot be null or empty");
             return false;
         }
 
         if (posId.length() > 16) {
-            LOG.warn("Pos Id is greater than 16 characters!");
+            LOG.warn("Pos Id is greater than 16 characters");
             return false;
         }
 
         if (!REGEX_ITEMS_FOR_POSID.matcher(posId).matches()) {
-            LOG.warn("The Pos Id cannot include special characters!");
+            LOG.warn("The Pos Id cannot include special characters");
             return false;
         }
 
@@ -2092,12 +2092,12 @@ public class Spi {
 
     private boolean isEftposAddressValid(String eftposAddress) {
         if (StringUtils.isBlank(eftposAddress)) {
-            LOG.warn("The Eftpos address cannot be null or empty!");
+            LOG.warn("The Eftpos address cannot be null or empty");
             return false;
         }
 
         if (!REGEX_ITEMS_FOR_EFTPOSADDRESS.matcher(eftposAddress.replaceAll("ws://", "")).matches()) {
-            LOG.warn("The Eftpos Address is not in right format!");
+            LOG.warn("The Eftpos Address is not in right format");
             return false;
         }
 
