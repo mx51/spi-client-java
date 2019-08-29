@@ -275,7 +275,10 @@ public class Spi {
 
         posId = "";
 
-        if (!isPosIdValid(id)) return false;
+        if (!isPosIdValid(id)) {
+            LOG.warn("Pos Id set to null");
+            return false;
+        }
 
         posId = id;
         spiMessageStamp.setPosId(id);
@@ -292,7 +295,10 @@ public class Spi {
 
         eftposAddress = "";
 
-        if (!isEftposAddressValid(address)) return false;
+        if (!isEftposAddressValid(address)) {
+            LOG.warn("Eftpos Address set to null");
+            return false;
+        }
 
         eftposAddress = "ws://" + address;
         conn.setAddress(eftposAddress);
