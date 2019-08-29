@@ -1,18 +1,18 @@
 package com.assemblypayments.spi;
 
-import com.assemblypayments.spi.model.*;
+import com.assemblypayments.spi.model.MessageStamp;
+import com.assemblypayments.spi.model.SpiStatus;
+import com.assemblypayments.spi.model.SubmitAuthCodeResult;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.regex.Pattern;
-
 public class SpiTest {
     @Test
-    public void testSetPosIdOnInvalidLengthIsSet() throws Spi.CompatibilityException, IllegalAccessException {
+    public void testSetPosIdOnInvalidLengthIsSet() throws Spi.CompatibilityException {
         // arrange
         final String posId = "12345678901234567";
-        final int lengthOfPosId = 16;
-        Spi spi = new Spi("", "", "", null);
+        final String eftposAddress = "10.20.30.40";
+        Spi spi = new Spi(posId, "", eftposAddress, null);
         spi.currentStatus = SpiStatus.UNPAIRED;
         spi.spiMessageStamp = new MessageStamp("", null, 0);
 
@@ -21,29 +21,31 @@ public class SpiTest {
 
         // assert
         Assert.assertNotEquals(posId, spi.posId);
-        Assert.assertEquals(lengthOfPosId, spi.posId.length());
     }
 
     @Test
-    public void testSpiInitateOnInvalidLengthForPosIdIsSet() throws Spi.CompatibilityException, IllegalAccessException {
+    public void testStartOnInvalidLengthForPosIdIsSet() throws Spi.CompatibilityException {
         // arrange
         final String posId = "12345678901234567";
-        final int lengthOfPosId = 16;
+        final String eftposAddress = "10.20.30.40";
+        final String posVendorId = "assembly";
+        final String posVersion = "2.6.3";
+        Spi spi = new Spi(posId, "", eftposAddress, null);
+        spi.setPosInfo(posVendorId, posVersion);
 
         // act
-        Spi spi = new Spi(posId, "", "", null);
+        spi.start();
 
         // assert
         Assert.assertNotEquals(posId, spi.posId);
-        Assert.assertEquals(lengthOfPosId, spi.posId.length());
     }
 
     @Test
-    public void testSetPosIdOnValidCharactersIsSet() throws Spi.CompatibilityException, IllegalAccessException {
+    public void testSetPosIdOnValidCharactersIsSet() throws Spi.CompatibilityException {
         // arrange
-        final String posId = "RamenPos@";
-        final Pattern regexItemsForPosId = Pattern.compile("[a-zA-Z0-9]*$");
-        Spi spi = new Spi("", "", "", null);
+        final String posId = "RamenPos";
+        final String eftposAddress = "10.20.30.40";
+        Spi spi = new Spi(posId, "", eftposAddress, null);
         spi.currentStatus = SpiStatus.UNPAIRED;
         spi.spiMessageStamp = new MessageStamp("", null, 0);
 
@@ -52,30 +54,62 @@ public class SpiTest {
 
         // assert
         Assert.assertEquals(posId, spi.posId);
-        Assert.assertFalse(regexItemsForPosId.matcher(posId).matches());
-        Assert.assertEquals(regexItemsForPosId.matcher(posId).matches(), regexItemsForPosId.matcher(spi.posId).matches());
     }
 
     @Test
-    public void testSpiInitateOnValidCharactersForPosIdIsSet() throws Spi.CompatibilityException, IllegalAccessException {
+    public void testStartOnValidCharactersForPosIdIsSet() throws Spi.CompatibilityException {
         // arrange
-        final String posId = "RamenPos@";
-        final Pattern regexItemsForPosId = Pattern.compile("[a-zA-Z0-9]*$");
+        final String posId = "RamenPos";
+        final String eftposAddress = "10.20.30.40";
+        final String posVendorId = "assembly";
+        final String posVersion = "2.6.3";
+        Spi spi = new Spi(posId, "", eftposAddress, null);
+        spi.setPosInfo(posVendorId, posVersion);
 
         // act
-        Spi spi = new Spi(posId, "", "", null);
+        spi.start();
 
         // assert
         Assert.assertEquals(posId, spi.posId);
-        Assert.assertFalse(regexItemsForPosId.matcher(posId).matches());
-        Assert.assertEquals(regexItemsForPosId.matcher(posId).matches(), regexItemsForPosId.matcher(spi.posId).matches());
     }
 
     @Test
-    public void testSetEftposAddressOnValidCharactersIsSet() throws Spi.CompatibilityException, IllegalAccessException {
+    public void testSetPosIdOnInvalidCharactersIsSet() throws Spi.CompatibilityException {
         // arrange
-        final String eftposAddress = "10.20";
-        final Pattern regexItemsForEftposAddress = Pattern.compile("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$");
+        final String posId = "RamenPos@";
+        final String eftposAddress = "10.20.30.40";
+        Spi spi = new Spi(posId, "", eftposAddress, null);
+        spi.currentStatus = SpiStatus.UNPAIRED;
+        spi.spiMessageStamp = new MessageStamp("", null, 0);
+
+        // act
+        spi.setPosId(posId);
+
+        // assert
+        Assert.assertNotEquals(posId, spi.posId);
+    }
+
+    @Test
+    public void testStartOnInvalidCharactersForPosIdIsSet() throws Spi.CompatibilityException {
+        // arrange
+        final String posId = "RamenPos@";
+        final String eftposAddress = "10.20.30.40";
+        final String posVendorId = "assembly";
+        final String posVersion = "2.6.3";
+        Spi spi = new Spi(posId, "", eftposAddress, null);
+        spi.setPosInfo(posVendorId, posVersion);
+
+        // act
+        spi.start();
+
+        // assert
+        Assert.assertNotEquals(posId, spi.posId);
+    }
+
+    @Test
+    public void testSetEftposAddressOnValidCharactersIsSet() throws Spi.CompatibilityException {
+        // arrange
+        final String eftposAddress = "10.20.30.40";
         Spi spi = new Spi("", "", "", null);
         spi.currentStatus = SpiStatus.UNPAIRED;
         spi.conn = new Connection(eftposAddress);
@@ -85,25 +119,58 @@ public class SpiTest {
         final String spiEftposAddress = spi.eftposAddress.replaceAll("ws://", "");
 
         // assert
-        Assert.assertFalse(regexItemsForEftposAddress.matcher(eftposAddress).matches());
         Assert.assertEquals(eftposAddress, spiEftposAddress);
-        Assert.assertEquals(regexItemsForEftposAddress.matcher(eftposAddress).matches(), regexItemsForEftposAddress.matcher(spiEftposAddress).matches());
     }
 
     @Test
-    public void testSpiInitateOnValidCharactersForEftposAddressIsSet() throws Spi.CompatibilityException, IllegalAccessException {
+    public void testStartOnValidCharactersForEftposAddressIsSet() throws Spi.CompatibilityException {
         // arrange
-        final String eftposAddress = "10.20";
-        final Pattern regexItemsForEftposAddress = Pattern.compile("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$");
+        final String posId = "RamenPos";
+        final String eftposAddress = "10.20.30.40";
+        final String posVendorId = "assembly";
+        final String posVersion = "2.6.3";
+        Spi spi = new Spi(posId, "", eftposAddress, null);
+        spi.setPosInfo(posVendorId, posVersion);
 
         // act
-        Spi spi = new Spi("", "", eftposAddress, null);
+        spi.start();
         final String spiEftposAddress = spi.eftposAddress.replaceAll("ws://", "");
 
         // assert
-        Assert.assertFalse(regexItemsForEftposAddress.matcher(eftposAddress).matches());
         Assert.assertEquals(eftposAddress, spiEftposAddress);
-        Assert.assertEquals(regexItemsForEftposAddress.matcher(eftposAddress).matches(), regexItemsForEftposAddress.matcher(spiEftposAddress).matches());
+    }
+
+    @Test
+    public void testSetEftposAddressOnInvalidCharactersIsSet() throws Spi.CompatibilityException {
+        // arrange
+        final String eftposAddress = "10.20.30";
+        Spi spi = new Spi("", "", "", null);
+        spi.currentStatus = SpiStatus.UNPAIRED;
+        spi.conn = new Connection(eftposAddress);
+
+        // act
+        spi.setEftposAddress(eftposAddress);
+        final String spiEftposAddress = spi.eftposAddress.replaceAll("ws://", "");
+
+        // assert
+        Assert.assertNotEquals(eftposAddress, spiEftposAddress);
+    }
+
+    @Test
+    public void testStartOnInvalidCharactersForEftposAddressIsSet() throws Spi.CompatibilityException {
+        // arrange
+        final String posId = "RamenPos";
+        final String eftposAddress = "10.20.30";
+        final String posVendorId = "assembly";
+        final String posVersion = "2.6.3";
+        Spi spi = new Spi(posId, "", eftposAddress, null);
+        spi.setPosInfo(posVendorId, posVersion);
+
+        // act
+        spi.start();
+
+        // assert
+        Assert.assertNotEquals(eftposAddress, spi.eftposAddress);
     }
 
     @Test

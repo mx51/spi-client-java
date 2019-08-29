@@ -120,9 +120,6 @@ public class Spi {
             throw new CompatibilityException("JDK configuration incompatible with SPI", e);
         }
 
-        posId = validatePosId(posId);
-        validateEftposAddress(eftposAddress);
-
         this.posId = posId;
         this.eftposAddress = "ws://" + eftposAddress;
         this.secrets = secrets;
@@ -162,6 +159,16 @@ public class Spi {
             // POS information is now required to be set
             LOG.warn("Missing POS vendor ID and version. posVendorId and posVersion are required before starting");
             throw new IllegalArgumentException("Missing POS vendor ID and version. posVendorId and posVersion are required before starting");
+        }
+
+        if (!isPosIdValid(posId)) {
+            LOG.warn("Invalid parameter, please correct them before pairing");
+            posId = "";
+        }
+
+        if (!isEftposAddressValid(eftposAddress)) {
+            LOG.warn("Invalid parameter, please correct them before pairing");
+            eftposAddress = "";
         }
 
         reconnectExecutor = new ScheduledThreadPoolExecutor(5);
@@ -265,8 +272,13 @@ public class Spi {
      */
     public boolean setPosId(@NotNull String id) {
         if (getCurrentStatus() != SpiStatus.UNPAIRED) return false;
-        posId = validatePosId(id);
-        spiMessageStamp.setPosId(posId);
+
+        posId = "";
+
+        if (!isPosIdValid(id)) return false;
+
+        posId = id;
+        spiMessageStamp.setPosId(id);
         return true;
     }
 
@@ -277,7 +289,11 @@ public class Spi {
      */
     public boolean setEftposAddress(String address) {
         if (getCurrentStatus() == SpiStatus.PAIRED_CONNECTED || autoAddressResolutionEnabled) return false;
-        validateEftposAddress(address);
+
+        eftposAddress = "";
+
+        if (!isEftposAddressValid(address)) return false;
+
         eftposAddress = "ws://" + address;
         conn.setAddress(eftposAddress);
         return true;
@@ -527,13 +543,15 @@ public class Spi {
      * @return Whether pairing has initiated or not.
      */
     public boolean pair() {
+        LOG.warn("Trying to pair ....");
+
         if (getCurrentStatus() != SpiStatus.UNPAIRED) {
-            LOG.warn("Tried to pair but we're already paired");
+            LOG.warn("Tried to pair but we're already paired. Stop pairing.");
             return false;
         }
 
-        if (StringUtils.isBlank(posId) || StringUtils.isBlank(eftposAddress)) {
-            LOG.warn("Tried to pair but missing posId and/or eftposAddress");
+        if (!isPosIdValid(posId) || !isEftposAddressValid(eftposAddress)) {
+            LOG.warn("Invalid Pos Id or Eftpos address, stop pairing.");
             return false;
         }
 
@@ -2053,23 +2071,37 @@ public class Spi {
 
     //region Internals for validations
 
-    private String validatePosId(String posId) {
-        if (!StringUtils.isBlank(posId) & posId.length() > 16) {
-            posId = posId.substring(0, 16);
-            LOG.warn("The Pos Id should be equal or less than 16 characters! It has been truncated");
+    private boolean isPosIdValid(String posId) {
+        if (StringUtils.isBlank(posId)) {
+            LOG.warn("Pos Id cannot be null or empty!");
+            return false;
         }
 
-        if (!StringUtils.isBlank(posId) & !REGEX_ITEMS_FOR_POSID.matcher(posId).matches()) {
-            LOG.warn("The Pos Id can not include special characters!");
+        if (posId.length() > 16) {
+            LOG.warn("Pos Id is greater than 16 characters!");
+            return false;
         }
 
-        return posId;
+        if (!REGEX_ITEMS_FOR_POSID.matcher(posId).matches()) {
+            LOG.warn("The Pos Id cannot include special characters!");
+            return false;
+        }
+
+        return true;
     }
 
-    private void validateEftposAddress(String eftposAddress) {
-        if (!StringUtils.isBlank(eftposAddress) & !REGEX_ITEMS_FOR_EFTPOSADDRESS.matcher(eftposAddress).matches()) {
-            LOG.warn("The Eftpos Address is not in correct format!");
+    private boolean isEftposAddressValid(String eftposAddress) {
+        if (StringUtils.isBlank(eftposAddress)) {
+            LOG.warn("The Eftpos address cannot be null or empty!");
+            return false;
         }
+
+        if (!REGEX_ITEMS_FOR_EFTPOSADDRESS.matcher(eftposAddress.replaceAll("ws://", "")).matches()) {
+            LOG.warn("The Eftpos Address is not in right format!");
+            return false;
+        }
+
+        return true;
     }
 
     //endregion
