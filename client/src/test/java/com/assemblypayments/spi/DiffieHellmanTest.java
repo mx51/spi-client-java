@@ -2,15 +2,13 @@ package com.assemblypayments.spi;
 
 import com.assemblypayments.spi.util.DiffieHellman;
 import com.assemblypayments.spi.util.RandomHelper;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class DiffieHellmanTest {
 
@@ -29,7 +27,7 @@ public class DiffieHellmanTest {
         BigInteger secretA = DiffieHellman.secret(primeP, publicKeyB, privateKeyA);
         BigInteger secretB = DiffieHellman.secret(primeP, publicKeyA, privateKeyB);
 
-        assertEquals(secretB, secretA);
+        Assert.assertEquals(secretB, secretA);
     }
 
     @Test
@@ -48,14 +46,14 @@ public class DiffieHellmanTest {
         BigInteger publicKeyB = DiffieHellman.publicKey(primeP, primeG, privateKeyB);
 
         // Should result in the following well known number
-        assertEquals(publicKeyB,
+        Assert.assertEquals(publicKeyB,
                 new BigInteger(
                         "13937492206031047726377677746757921023785865161711475317174852743458085972205230299198350504612922098487548140816754440307076166055257752333977500237623761651798309657163956423196446289209492990021148645911047877880418288215506315988031313308757685574136931332211416208698474521512055282419261914878127800815451795657625776361486208624055307330917667568520525506193865130553366132859605894136270581379193553757875072525875034653743007926569724507481311440697029586510437642238099656004667926545975053817946452156676950868454136633495486741131821585053777971482962860700849249057853674609970118970647438173499487768514"));
 
         // Calculate Secret
         BigInteger secretB = DiffieHellman.secret(primeP, publicKeyA, privateKeyB);
         // Should Result in the following well known secret.
-        assertEquals(secretB,
+        Assert.assertEquals(secretB,
                 new BigInteger(
                         "17574532284595554228770542578145458081719781058045063175688772743423924399411406200223997425795977226735712284391179978852253613346926080761628802664085045531796220784085311215093471160914442692274980632286568900367895454304533334450617380428362254473222831478193415222881689923861172428575632214297967550826460508634891791127942687630353829719246724903147169063379750256523005309264102997944008112551383251560153285483075803832550164760264165682355751637761390244202226339540318827287797180863284173748514677579269180126947721499144727772986832223499738071139796968492815538042908414723947769999062186130240163854083"));
     }
@@ -75,7 +73,7 @@ public class DiffieHellmanTest {
                 "70900735223964890815905879227737819348808518698920446491346508980461201746567735331455825644429877946556431095820785835497384849778344216981228226252639932672153547963980483673419756271345828771971984887453014488572245819864454136618980914729839523581263886740821363010486083940557620831348661126601106717071");
         BigInteger calculatedSecret = DiffieHellman.secret(primeP, publicKey, privateKey);
 
-        assertEquals(expectedSecret, calculatedSecret);
+        Assert.assertEquals(expectedSecret, calculatedSecret);
     }
 
     @Test
@@ -83,8 +81,8 @@ public class DiffieHellmanTest {
         BigInteger primeP = BigInteger.valueOf(23);
         for (int i = 0; i < 100; i++) {
             BigInteger privateKey = DiffieHellman.randomPrivateKey(primeP);
-            assertTrue(privateKey.compareTo(BigInteger.valueOf(2)) >= 0);
-            assertTrue(privateKey.compareTo(primeP.subtract(BigInteger.valueOf(1))) <= 0);
+            Assert.assertTrue(privateKey.compareTo(BigInteger.valueOf(2)) >= 0);
+            Assert.assertTrue(privateKey.compareTo(primeP.subtract(BigInteger.valueOf(1))) <= 0);
         }
     }
 
@@ -99,7 +97,7 @@ public class DiffieHellmanTest {
 
         // be a little lenient because out of 100, we are bound to get duplicates when range is just 7919
         int leniency = 5;
-        assertTrue(count - new HashSet<BigInteger>(privateKeys).size() < leniency);
+        Assert.assertTrue(count - new HashSet<BigInteger>(privateKeys).size() < leniency);
     }
 
     @Test
@@ -109,7 +107,7 @@ public class DiffieHellmanTest {
         BigInteger privateKey = BigInteger.valueOf(6);
 
         BigInteger actual = DiffieHellman.publicKey(primeP, primeG, privateKey);
-        assertEquals(BigInteger.valueOf(8), actual);
+        Assert.assertEquals(BigInteger.valueOf(8), actual);
     }
 
     @Test
@@ -119,7 +117,7 @@ public class DiffieHellmanTest {
         BigInteger privateKey = BigInteger.valueOf(6);
 
         BigInteger actual = DiffieHellman.secret(primeP, publicKey, privateKey);
-        assertEquals(BigInteger.valueOf(2), actual);
+        Assert.assertEquals(BigInteger.valueOf(2), actual);
     }
 
     @Test

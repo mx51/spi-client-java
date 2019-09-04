@@ -13,7 +13,7 @@ public class SpiPayAtTable {
 
     private static final Logger LOG = LoggerFactory.getLogger("spipat");
 
-    private final Spi spi;
+    final Spi spi;
 
     private final PayAtTableConfig config;
 
@@ -139,15 +139,9 @@ public class SpiPayAtTable {
         String operatorId = m.getDataStringValue("operator_id");
 
         GetOpenTablesResponse openTablesResponse = getOpenTablesDelegate.getOpenTables(operatorId);
-        if (openTablesResponse.getOpenTablesEntries().size() <= 0) {
+        if (openTablesResponse == null || openTablesResponse.getOpenTablesEntries() == null || openTablesResponse.getOpenTablesEntries().size() <= 0) {
+            openTablesResponse = new GetOpenTablesResponse();
             LOG.info("There is no open table.");
-        }
-
-        for (OpenTablesEntry openTablesEntry : openTablesResponse.getOpenTablesEntries()) {
-            if (openTablesEntry.getTableId().length() > 20) {
-                LOG.info(openTablesEntry.getTableId() + " Table Id is greater than 20 characters!");
-                openTablesEntry.setTableId(openTablesEntry.getTableId().substring(0, 20));
-            }
         }
 
         spi.send(openTablesResponse.toMessage(m.getId()));

@@ -17,8 +17,8 @@ public class GetOpenTablesResponse {
 
     private static final Gson GSON = new GsonBuilder().create();
 
-    private List<OpenTablesEntry> getOpenTables() {
-        if (openTablesEntries.size() == 0) return new ArrayList<>();
+    public List<OpenTablesEntry> getOpenTables() {
+        if (openTablesEntries == null || openTablesEntries.size() == 0) return new ArrayList<>();
 
         final byte[] bdArray = Base64.decodeBase64(toOpenTablesData(openTablesEntries));
         final String bdStr = new String(bdArray, Charsets.UTF_8);

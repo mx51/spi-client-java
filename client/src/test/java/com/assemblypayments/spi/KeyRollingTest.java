@@ -5,9 +5,8 @@ import com.assemblypayments.spi.model.Message;
 import com.assemblypayments.spi.model.Secrets;
 import com.assemblypayments.spi.util.Events;
 import com.assemblypayments.spi.util.KeyRollingHelper;
+import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class KeyRollingTest {
 
@@ -19,11 +18,11 @@ public class KeyRollingTest {
 
         KeyRollingResult krResult = KeyRollingHelper.performKeyRolling(krRequest, oldSecrets);
 
-        assertEquals("0307C53DD0F119A1BC4CE61AA395882FB63BF8FCD0E0D27BBEB0D56AA9B24162", krResult.getNewSecrets().getEncKey());
-        assertEquals("E4C3908437C14AC442C925FC8ED536C69FF67080D15FE007D69F8580D73FDF9D", krResult.getNewSecrets().getHmacKey());
+        Assert.assertEquals("0307C53DD0F119A1BC4CE61AA395882FB63BF8FCD0E0D27BBEB0D56AA9B24162", krResult.getNewSecrets().getEncKey());
+        Assert.assertEquals("E4C3908437C14AC442C925FC8ED536C69FF67080D15FE007D69F8580D73FDF9D", krResult.getNewSecrets().getHmacKey());
 
-        assertEquals("x", krResult.getKeyRollingConfirmation().getId());
-        assertEquals(Events.KEY_ROLL_RESPONSE, krResult.getKeyRollingConfirmation().getEventName());
+        Assert.assertEquals("x", krResult.getKeyRollingConfirmation().getId());
+        Assert.assertEquals(Events.KEY_ROLL_RESPONSE, krResult.getKeyRollingConfirmation().getEventName());
     }
 
 }

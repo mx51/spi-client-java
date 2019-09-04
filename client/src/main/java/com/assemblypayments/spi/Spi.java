@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  * SPI integration client, used to manage connection to the terminal.
@@ -34,23 +35,28 @@ public class Spi {
     private static final long MAX_WAIT_FOR_CANCEL_TX = TimeUnit.SECONDS.toMillis(10);
     private static final long PONG_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long PING_FREQUENCY = TimeUnit.SECONDS.toMillis(18);
+    private static final int RETRIES_BEFORE_PAIRING = 3;
+    private static final int RETRIES_BEFORE_RESOLVING_DEVICE_ADDRESS = 3;
 
-    private String posId;
-    private String eftposAddress;
+    private static final Pattern REGEX_ITEMS_FOR_POSID = Pattern.compile("[a-zA-Z0-9]*$");
+    private static final Pattern REGEX_ITEMS_FOR_EFTPOSADDRESS = Pattern.compile("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$");
+
+    String posId;
+    String eftposAddress;
     private String serialNumber;
     private String deviceApiKey;
     private String acquirerCode;
     private boolean inTestMode;
     private boolean autoAddressResolutionEnabled;
     private Secrets secrets;
-    private MessageStamp spiMessageStamp;
+    MessageStamp spiMessageStamp;
     private String posVendorId;
     private String posVersion;
     private boolean hasSetInfo;
 
-    private Connection conn;
+    Connection conn;
 
-    private SpiStatus currentStatus;
+    SpiStatus currentStatus;
     private SpiFlow currentFlow;
     private PairingFlowState currentPairingFlowState;
     private TransactionFlowState currentTxFlowState;
@@ -76,7 +82,6 @@ public class Spi {
 
     private final Object txLock = new Object();
     private final long missedPongsToDisconnect = 2;
-    private final int retriesBeforeResolvingDeviceAddress = 5;
 
     private SpiPayAtTable spiPat;
 
@@ -86,6 +91,9 @@ public class Spi {
     private ScheduledFuture reconnectFuture;
 
     final SpiConfig config = new SpiConfig();
+
+    private int retriesSinceLastPairing = 0;
+
     //endregion
 
     //region Setup methods
@@ -153,6 +161,16 @@ public class Spi {
             throw new IllegalArgumentException("Missing POS vendor ID and version. posVendorId and posVersion are required before starting");
         }
 
+        if (!isPosIdValid(posId)) {
+            LOG.warn("Invalid parameter, please correct them before pairing");
+            posId = "";
+        }
+
+        if (!isEftposAddressValid(eftposAddress)) {
+            LOG.warn("Invalid parameter, please correct them before pairing");
+            eftposAddress = "";
+        }
+
         reconnectExecutor = new ScheduledThreadPoolExecutor(5);
         reconnectFuture = null;
 
@@ -196,6 +214,11 @@ public class Spi {
         if (hasSerialNumberChanged(was)) {
             autoResolveEftposAddress();
         } else {
+            if (getCurrentDeviceStatus() == null) {
+                DeviceAddressStatus deviceAddressStatus = new DeviceAddressStatus();
+                setCurrentDeviceStatus(deviceAddressStatus);
+            }
+
             getCurrentDeviceStatus().setDeviceAddressResponseCode(DeviceAddressResponseCode.SERIAL_NUMBER_NOT_CHANGED);
             deviceStatusChanged(getCurrentDeviceStatus());
         }
@@ -249,6 +272,14 @@ public class Spi {
      */
     public boolean setPosId(@NotNull String id) {
         if (getCurrentStatus() != SpiStatus.UNPAIRED) return false;
+
+        posId = "";
+
+        if (!isPosIdValid(id)) {
+            LOG.warn("Pos Id set to null");
+            return false;
+        }
+
         posId = id;
         spiMessageStamp.setPosId(id);
         return true;
@@ -261,6 +292,14 @@ public class Spi {
      */
     public boolean setEftposAddress(String address) {
         if (getCurrentStatus() == SpiStatus.PAIRED_CONNECTED || autoAddressResolutionEnabled) return false;
+
+        eftposAddress = "";
+
+        if (!isEftposAddressValid(address)) {
+            LOG.warn("Eftpos Address set to null");
+            return false;
+        }
+
         eftposAddress = "ws://" + address;
         conn.setAddress(eftposAddress);
         return true;
@@ -510,13 +549,15 @@ public class Spi {
      * @return Whether pairing has initiated or not.
      */
     public boolean pair() {
+        LOG.warn("Trying to pair ....");
+
         if (getCurrentStatus() != SpiStatus.UNPAIRED) {
-            LOG.warn("Tried to pair but we're already paired");
+            LOG.warn("Tried to pair but we're already paired. Stop pairing.");
             return false;
         }
 
-        if (StringUtils.isBlank(posId) || StringUtils.isBlank(eftposAddress)) {
-            LOG.warn("Tried to pair but missing posId and/or eftposAddress");
+        if (!isPosIdValid(posId) || !isEftposAddressValid(eftposAddress)) {
+            LOG.warn("Invalid Pos Id or Eftpos address, stop pairing.");
             return false;
         }
 
@@ -1411,8 +1452,17 @@ public class Spi {
 
         if (getCurrentFlow() != SpiFlow.TRANSACTION || currentState.isFinished() || !posRefIdMatched) {
             String trace = checkPosRefId ? "Incoming Pos Ref ID: " + incomingPosRefId : m.getDecryptedJson();
-            LOG.info("Received " + typeName + " response but I was not waiting for one. " + trace);
-            return true;
+
+            if (typeName.equals("Cancel")) {
+                final CancelTransactionResponse response = new CancelTransactionResponse(m);
+                if (!response.wasTxnPastPointOfNoReturn()) {
+                    LOG.info("Received " + typeName + " response but I was not waiting for one. " + trace);
+                    return true;
+                }
+            } else {
+                LOG.info("Received " + typeName + " response but I was not waiting for one. " + trace);
+                return true;
+            }
         }
         return false;
     }
@@ -1708,7 +1758,7 @@ public class Spi {
                         @Override
                         public void run() {
                             if (autoAddressResolutionEnabled) {
-                                if (retriesSinceLastDeviceAddressResolution >= retriesBeforeResolvingDeviceAddress) {
+                                if (retriesSinceLastDeviceAddressResolution >= RETRIES_BEFORE_RESOLVING_DEVICE_ADDRESS) {
                                     autoResolveEftposAddress();
                                     retriesSinceLastDeviceAddressResolution = 0;
                                 } else {
@@ -1726,10 +1776,34 @@ public class Spi {
                         }
                     }, RECONNECTION_TIMEOUT, TimeUnit.MILLISECONDS);
                 } else if (getCurrentFlow() == SpiFlow.PAIRING) {
-                    LOG.warn("Lost connection during pairing.");
-                    getCurrentPairingFlowState().setMessage("Could not Connect to Pair. Check Network and Try Again...");
-                    onPairingFailed();
-                    pairingFlowStateChanged();
+                    if (retriesSinceLastPairing < RETRIES_BEFORE_PAIRING) {
+                        LOG.info("Will try to re-pair in {}s...", RECONNECTION_TIMEOUT / 1000);
+                        cleanReconnectFuture();
+                    }
+
+                    reconnectFuture = reconnectExecutor.schedule(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (currentPairingFlowState.isFinished()) return;
+
+                            if (retriesSinceLastPairing >= RETRIES_BEFORE_PAIRING) {
+                                retriesSinceLastPairing = 0;
+                                LOG.warn("Lost connection during pairing.");
+                                onPairingFailed();
+                                pairingFlowStateChanged();
+                            } else {
+                                if (getCurrentStatus() != SpiStatus.PAIRED_CONNECTED) {
+                                    // This is non-blocking
+                                    Connection conn = Spi.this.conn;
+                                    if (conn != null) {
+                                        conn.connect();
+                                    }
+                                }
+
+                                retriesSinceLastPairing++;
+                            }
+                        }
+                    }, RECONNECTION_TIMEOUT, TimeUnit.MILLISECONDS);
                 }
                 break;
             default:
@@ -1997,6 +2071,43 @@ public class Spi {
             LOG.debug("Asked to send, but not connected: " + message.getDecryptedJson());
             return false;
         }
+    }
+
+    //endregion
+
+    //region Internals for validations
+
+    private boolean isPosIdValid(String posId) {
+        if (StringUtils.isBlank(posId)) {
+            LOG.warn("Pos Id cannot be null or empty");
+            return false;
+        }
+
+        if (posId.length() > 16) {
+            LOG.warn("Pos Id is greater than 16 characters");
+            return false;
+        }
+
+        if (!REGEX_ITEMS_FOR_POSID.matcher(posId).matches()) {
+            LOG.warn("The Pos Id cannot include special characters");
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean isEftposAddressValid(String eftposAddress) {
+        if (StringUtils.isBlank(eftposAddress)) {
+            LOG.warn("The Eftpos address cannot be null or empty");
+            return false;
+        }
+
+        if (!REGEX_ITEMS_FOR_EFTPOSADDRESS.matcher(eftposAddress.replaceAll("ws://", "")).matches()) {
+            LOG.warn("The Eftpos Address is not in right format");
+            return false;
+        }
+
+        return true;
     }
 
     //endregion

@@ -1,18 +1,25 @@
 package com.assemblypayments.spi.service;
 
-import com.assemblypayments.spi.model.DeviceAddressResponseCode;
 import com.assemblypayments.spi.model.DeviceAddressStatus;
 import com.google.gson.Gson;
 import okhttp3.*;
 import org.slf4j.*;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 public class DeviceService {
 
     private static final Logger LOG = LoggerFactory.getLogger("spi");
-    private OkHttpClient okHttpClient = new OkHttpClient();
-    private Gson gson = new Gson();
+    private static final Gson GSON = new Gson();
+    private final OkHttpClient okHttpClient;
+    private static final long CONNECTION_TIMEOUT_SECS = 8;
+
+    public DeviceService() {
+        okHttpClient = new OkHttpClient.Builder()
+                .connectTimeout(CONNECTION_TIMEOUT_SECS, TimeUnit.SECONDS)
+                .build();
+    }
 
     public DeviceAddressStatus retrieveService(String serialNumber, String apiKey, String acquirerCode, boolean isTestMode) {
         String envSuffix = "";
@@ -35,7 +42,7 @@ public class DeviceService {
             Response response = okHttpClient.newCall(request).execute();
 
             if (response.body() != null) {
-                deviceAddressStatus = gson.fromJson(response.body().string(), DeviceAddressStatus.class);
+                deviceAddressStatus = GSON.fromJson(response.body().string(), DeviceAddressStatus.class);
             }
 
             deviceAddressStatus.setResponseCode(response.code());
