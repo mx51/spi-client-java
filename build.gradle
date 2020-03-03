@@ -15,7 +15,7 @@ allprojects {
         }
     }
 
-    group = 'com.assemblypayments'
+    group = 'io.mx51'
 
     repositories {
         jcenter()

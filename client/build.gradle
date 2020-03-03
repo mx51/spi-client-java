@@ -9,14 +9,14 @@ version = property('project.version')
 sourceCompatibility = JavaVersion.VERSION_1_7
 
 ext {
-    publishVendor = 'Assembly Payments'
+    publishVendor = 'mx51'
     publishName = 'SPI Client Java'
-    publishDescription = 'Java client library for Assembly Payments\' in-Store integration.'
+    publishDescription = 'Java client library for mx51\'s in-Store integration.'
     publishLicense = 'Apache-2.0'
-    publishUrl = 'https://github.com/AssemblyPayments/spi-client-java'
-    publishVcs = 'https://github.com/AssemblyPayments/spi-client-java.git'
+    publishUrl = 'https://github.com/mx51/spi-client-java'
+    publishVcs = 'https://github.com/mx51/spi-client-java.git'
 
-    configPackage = "com.assemblypayments.spi"
+    configPackage = "io.mx51.spi"
     configFields = [
             VERSION: "$version"
     ]

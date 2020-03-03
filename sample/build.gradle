@@ -3,9 +3,9 @@ plugins {
     id 'application'
 }
 
-mainClassName = 'com.assemblypayments.spi.Pos'
+mainClassName = 'io.mx51.spi.Pos'
 
-sourceCompatibility = JavaVersion.VERSION_1_6
+sourceCompatibility = JavaVersion.VERSION_1_7
 
 run {
     if (project.hasProperty('runArgs')) {
