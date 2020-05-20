@@ -29,7 +29,7 @@ public class SpiTest {
         final String posId = "12345678901234567";
         final String eftposAddress = "10.20.30.40";
         final String posVendorId = "mx51";
-        final String posVersion = "2.6.3";
+        final String posVersion = "2.6.5";
         Spi spi = new Spi(posId, "", eftposAddress, null);
         spi.setPosInfo(posVendorId, posVersion);
 
@@ -62,7 +62,7 @@ public class SpiTest {
         final String posId = "RamenPos";
         final String eftposAddress = "10.20.30.40";
         final String posVendorId = "mx51";
-        final String posVersion = "2.6.3";
+        final String posVersion = "2.6.5";
         Spi spi = new Spi(posId, "", eftposAddress, null);
         spi.setPosInfo(posVendorId, posVersion);
 
@@ -95,7 +95,7 @@ public class SpiTest {
         final String posId = "RamenPos@";
         final String eftposAddress = "10.20.30.40";
         final String posVendorId = "mx51";
-        final String posVersion = "2.6.3";
+        final String posVersion = "2.6.5";
         Spi spi = new Spi(posId, "", eftposAddress, null);
         spi.setPosInfo(posVendorId, posVersion);
 
@@ -128,7 +128,7 @@ public class SpiTest {
         final String posId = "RamenPos";
         final String eftposAddress = "10.20.30.40";
         final String posVendorId = "mx51";
-        final String posVersion = "2.6.3";
+        final String posVersion = "2.6.5";
         Spi spi = new Spi(posId, "", eftposAddress, null);
         spi.setPosInfo(posVendorId, posVersion);
 
@@ -162,7 +162,7 @@ public class SpiTest {
         final String posId = "RamenPos";
         final String eftposAddress = "10.20.30";
         final String posVendorId = "mx51";
-        final String posVersion = "2.6.3";
+        final String posVersion = "2.6.5";
         Spi spi = new Spi(posId, "", eftposAddress, null);
         spi.setPosInfo(posVendorId, posVersion);
 
