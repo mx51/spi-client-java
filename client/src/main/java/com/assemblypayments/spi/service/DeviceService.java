@@ -31,7 +31,7 @@ public class DeviceService {
             envSuffix = "-sb";
         }
 
-        deviceAddressUrl = String.format("https://device-address-api%s.%s.msp.assemblypayments.com/v1/%s/ip", envSuffix, acquirerCode, serialNumber);
+        deviceAddressUrl = String.format("https://device-address-api%s.%s.mspenv.io/v1/%s/ip", envSuffix, acquirerCode, serialNumber);
 
         try {
             Request request = new Request.Builder()
