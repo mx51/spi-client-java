@@ -1,20 +1,25 @@
 sudo: false
+dist: trusty
 language: java
 jdk: oraclejdk8
 
-script: ./gradlew clean client:test
+script: "./gradlew clean client:test"
 
 deploy:
 - provider: script
-  script: ./gradlew client:distZip client:bintrayUpload
+  script:
+  - "./gradlew client:distZip client:publish
     -Pproject.version=$TRAVIS_TAG
-    -Pbintray.user=$BINTRAY_USER
-    -Pbintray.key=$BINTRAY_KEY
+    -Psigning.keyId=$SIGNING_KEY_ID
+    -Psigning.password=$SIGNING_PASSWORD
+    -Psigning.secretKeyRingFile=$TRAVIS_BUILD_DIR/signing.gpg
+    -PossrhUsername=$OSSRH_USERNAME
+    -PossrhPassword=$OSSRH_PASSWORD"
   skip_cleanup: true
   on:
     tags: true
 - provider: releases
-  api_key: $GITHUB_KEY
+  api_key: "$GITHUB_KEY"
   file_glob: true
   file: client/build/distributions/*-$TRAVIS_TAG.zip
   skip_cleanup: true
@@ -24,10 +29,11 @@ deploy:
 before_cache:
 - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
 - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
-
 cache:
   directories:
-  - $HOME/.gradle/caches/
-  - $HOME/.gradle/wrapper/
+  - "$HOME/.gradle/caches/"
+  - "$HOME/.gradle/wrapper/"
 
-dist: trusty
+before_install:
+- openssl aes-256-cbc -K $encrypted_a40d2cfb3073_key -iv $encrypted_a40d2cfb3073_iv
+  -in signing.gpg.enc -out signing.gpg -d

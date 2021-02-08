@@ -1,13 +1,15 @@
+// See: https://central.sonatype.org/publish/publish-gradle/
+
 apply plugin: 'osgi'
 apply plugin: 'maven-publish'
-apply plugin: 'com.jfrog.bintray'
+apply plugin: 'signing'
 
 jar {
     manifest {
-        instruction 'Bundle-Description', publishName
-        instruction 'Bundle-Vendor', publishVendor
-        instruction 'Implementation-Title', publishName
-        instruction 'Implementation-Vendor', publishVendor
+        instruction 'Bundle-Description', project.publishName
+        instruction 'Bundle-Vendor', project.publishVendor
+        instruction 'Implementation-Title', project.publishName
+        instruction 'Implementation-Vendor', project.publishVendor
         instruction 'Implementation-Version', project.version
     }
 }
@@ -26,58 +28,69 @@ artifacts {
     archives sourcesJar, javadocJar
 }
 
-publish.dependsOn {
-    if (!rootProject.hasProperty('bintray.user') || !rootProject.hasProperty('bintray.key')) {
-        throw new IllegalArgumentException('Properties \'bintray.user\' and \'bintray.key\'' +
-                ' must be defined to access the SPI repository!')
-    }
-}
+if (hasProperty('ossrhUsername') && hasProperty('ossrhPassword')) {
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-            artifact sourcesJar
-            artifact javadocJar
-            groupId project.group
-            artifactId project.archivesBaseName
-            version project.version
-            pom.withXml {
-                def root = asNode()
-                root.appendNode('name', project.publishName)
-                root.appendNode('description', project.publishDescription)
-                root.appendNode('url', project.publishVcs)
-                root.children().last()
+                artifact sourcesJar
+                artifact javadocJar
+
+                groupId project.group
+                artifactId project.archivesBaseName
+                version project.version
+
+                pom {
+                    name = project.publishName
+                    description = project.publishDescription
+                    url = project.publishScmUrl
+
+                    licenses {
+                        license {
+                            name = project.publishLicenseName
+                            url = project.publishLicenseUrl
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id = project.publishDeveloperId
+                            name = project.publishDeveloperName
+                        }
+                    }
+
+                    scm {
+                        url = project.publishScmUrl
+                        connection = project.publishScmConnection
+                        developerConnection = project.publishScmDeveloperConnection
+                    }
+                }
+            }
+        }
+
+        repositories {
+            maven {
+                def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+                def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
+                url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+
+                credentials {
+                    username project['ossrhUsername']
+                    password project['ossrhPassword']
+                }
             }
         }
     }
-}
 
-if (hasProperty('bintray.user') && hasProperty('bintray.key')) {
-    bintray {
-        user = project['bintray.user']
-        key = project['bintray.key']
-        publications = ['mavenJava']
+    signing {
+        sign publishing.publications.mavenJava
+    }
 
-        dryRun = false
-        publish = true
-
-        pkg {
-            name = project['bintray.package']
-            repo = project['bintray.repo']
-            userOrg = project['bintray.userOrg']
-            desc = project.publishDescription
-            licenses = [project.publishLicense]
-            websiteUrl = project.publishUrl
-            vcsUrl = project.publishVcs
-            version {
-                released = new Date()
-                name = project.version
-                vcsTag = project.version
-                gpg {
-                    sign = true
-                }
-            }
+    publish.dependsOn {
+        if (!rootProject.hasProperty('ossrhUsername') || !rootProject.hasProperty('ossrhPassword')) {
+            throw new IllegalArgumentException("Properties 'ossrhUsername' and 'ossrhPassword'" +
+                    " must be defined to access the Sonatype repository!")
         }
     }
 }
