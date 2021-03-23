@@ -49,7 +49,7 @@ public class DeviceService {
             deviceAddressStatus.setResponseMessage(response.message());
             return deviceAddressStatus;
         } catch (IOException ex) {
-            LOG.error("DeviceAddressStatus: " + ex.getMessage());
+            LOG.error("Error with DeviceService: " + ex.getMessage());
             return null;
         }
     }
