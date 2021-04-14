@@ -9,17 +9,19 @@ version = property('project.version')
 sourceCompatibility = JavaVersion.VERSION_1_7
 
 ext {
-    publishVendor = 'mx51'
-    publishName = 'SPI Client Java'
-    publishDescription = 'Java client library for mx51\'s in-Store integration.'
-    publishLicense = 'Apache-2.0'
-    publishUrl = 'https://github.com/mx51/spi-client-java'
-    publishVcs = 'https://github.com/mx51/spi-client-java.git'
+    publishVendor = "mx51"
+    publishName = "SPI Client Java"
+    publishDescription = "Java client library for mx51's in-Store integration."
+    publishLicenseName = "Apache License, Version 2.0"
+    publishLicenseUrl = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+    publishScmUrl = "https://github.com/mx51/spi-client-java"
+    publishScmConnection = "scm:git:git://github.com/mx51/spi-client-java.git"
+    publishScmDeveloperConnection = "scm:git:ssh://git@github.com/mx51/spi-client-java.git"
+    publishDeveloperId = "mx51"
+    publishDeveloperName = "mx51"
 
     configPackage = "io.mx51.spi"
-    configFields = [
-            VERSION: "$version"
-    ]
+    configFields = [VERSION: "$version"]
 }
 
 dependencies {
