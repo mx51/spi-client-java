@@ -1,23 +1,26 @@
 buildscript {
     repositories {
-        jcenter()
+        mavenCentral()
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
     }
 
     dependencies {
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0'
+        classpath 'com.diffplug.gradle:goomph:3.29.1'
     }
 }
 
 allprojects {
     buildscript {
         repositories {
-            jcenter()
+            mavenCentral()
         }
     }
 
     group = 'io.mx51'
 
     repositories {
-        jcenter()
+        mavenCentral()
     }
 }

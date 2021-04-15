@@ -25,19 +25,19 @@ ext {
 }
 
 dependencies {
-    compile 'commons-lang:commons-lang:2.6'
-    compile 'commons-codec:commons-codec:1.11'
-    compile 'com.google.code.gson:gson:2.8.2'
-    compile 'com.squareup.okhttp3:okhttp:3.12.3'
-    compile 'org.slf4j:slf4j-api:1.7.25'
-    compile 'org.jetbrains:annotations:16.0.1'
+    implementation 'commons-lang:commons-lang:2.6'
+    implementation 'commons-codec:commons-codec:1.11'
+    implementation 'com.google.code.gson:gson:2.8.2'
+    implementation 'com.squareup.okhttp3:okhttp:3.12.3'
+    implementation 'org.slf4j:slf4j-api:1.7.25'
+    implementation 'org.jetbrains:annotations:16.0.1'
 
-    testCompile 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.12'
 }
 
 sourceSets.main.java.srcDirs += 'src/gen/java'
 
-distributions.main.baseName = archivesBaseName
+distributions.main.distributionBaseName = archivesBaseName
 
 apply from: '../gradle/publish.gradle'
 apply from: '../gradle/config.gradle'
