@@ -2,6 +2,7 @@ package io.mx51.spi;
 
 import io.mx51.spi.model.*;
 import io.mx51.spi.service.DeviceService;
+import io.mx51.spi.service.TenantService;
 import io.mx51.spi.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -2175,6 +2176,15 @@ public class Spi {
         }).start();
     }
 
+    //endregion
+
+    //region Static Methods
+    public static Tenants GetAvailableTenants(String posVendorId, String apiKey, String countryCode)
+    {
+        TenantService tenantService = new TenantService();
+        Tenants tenantsResponse = tenantService.retrieveService(posVendorId, apiKey, countryCode);
+        return tenantsResponse;
+    }
     //endregion
 
     //region Disposal
