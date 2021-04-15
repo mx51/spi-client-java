@@ -1,18 +1,16 @@
 // See: https://central.sonatype.org/publish/publish-gradle/
 
-apply plugin: 'osgi'
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
+apply plugin: 'com.diffplug.osgi.bndmanifest'
 
-jar {
-    manifest {
-        instruction 'Bundle-Description', project.publishName
-        instruction 'Bundle-Vendor', project.publishVendor
-        instruction 'Implementation-Title', project.publishName
-        instruction 'Implementation-Vendor', project.publishVendor
-        instruction 'Implementation-Version', project.version
-    }
-}
+jar.manifest.attributes(
+        'Bundle-Description': project.publishName,
+        'Bundle-Vendor': project.publishVendor,
+        'Implementation-Title': project.publishName,
+        'Implementation-Vendor': project.publishVendor,
+        'Implementation-Version': project.version
+)
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
