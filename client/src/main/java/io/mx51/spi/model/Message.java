@@ -31,6 +31,10 @@ public class Message {
     private Map<String, Object> data;
     @SerializedName("datetime")
     private String dateTimeStamp;
+    @SerializedName("pos_counter")
+    private Integer posCounter;
+    @SerializedName("conn_id")
+    private String connId;
     @SerializedName("pos_id")
     private String posId;
     private transient String incomingHmac;
@@ -193,20 +197,14 @@ public class Message {
         return Collections.emptyList();
     }
 
-    public long getServerTimeDelta() {
-        final long now = System.currentTimeMillis();
-        try {
-            final long msgTime = new SimpleDateFormat(DATE_TIME_FORMAT, Locale.US).parse(dateTimeStamp).getTime();
-            return msgTime - now;
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
+    public String getConnId() {
+        return connId;
     }
 
     public String toJson(MessageStamp stamp) {
-        final long now = System.currentTimeMillis();
-        final long adjustedTime = now + stamp.getServerTimeDelta();
-        dateTimeStamp = new SimpleDateFormat(DATE_TIME_FORMAT, Locale.US).format(new Date(adjustedTime));
+        dateTimeStamp = new SimpleDateFormat(DATE_TIME_FORMAT, Locale.US).format(new Date());
+        posCounter = stamp.getPosCounter()+1;
+        connId = stamp.getConnId();
 
         if (!needsEncryption) {
             // Unencrypted Messages need PosID inside the message

@@ -14,7 +14,7 @@ public class SpiTest {
         final String eftposAddress = "10.20.30.40";
         Spi spi = new Spi(posId, "", eftposAddress, null);
         spi.currentStatus = SpiStatus.UNPAIRED;
-        spi.spiMessageStamp = new MessageStamp("", null, 0);
+        spi.spiMessageStamp = new MessageStamp("", null);
 
         // act
         spi.setPosId(posId);
@@ -47,7 +47,7 @@ public class SpiTest {
         final String eftposAddress = "10.20.30.40";
         Spi spi = new Spi(posId, "", eftposAddress, null);
         spi.currentStatus = SpiStatus.UNPAIRED;
-        spi.spiMessageStamp = new MessageStamp("", null, 0);
+        spi.spiMessageStamp = new MessageStamp("", null);
 
         // act
         spi.setPosId(posId);
@@ -80,7 +80,7 @@ public class SpiTest {
         final String eftposAddress = "10.20.30.40";
         Spi spi = new Spi(posId, "", eftposAddress, null);
         spi.currentStatus = SpiStatus.UNPAIRED;
-        spi.spiMessageStamp = new MessageStamp("", null, 0);
+        spi.spiMessageStamp = new MessageStamp("", null);
 
         // act
         spi.setPosId(posId);

@@ -131,7 +131,7 @@ public class Spi {
         currentFlow = SpiFlow.IDLE;
 
         // Our stamp for signing outgoing messages
-        spiMessageStamp = new MessageStamp(this.posId, this.secrets, 0);
+        spiMessageStamp = new MessageStamp(this.posId, this.secrets);
 
         // We will maintain some state
         mostRecentPingSent = null;
@@ -1712,6 +1712,7 @@ public class Spi {
 
             case CONNECTED:
                 retriesSinceLastDeviceAddressResolution = 0;
+                spiMessageStamp.resetConnection();
 
                 if (getCurrentFlow() == SpiFlow.PAIRING && getCurrentStatus() == SpiStatus.UNPAIRED) {
                     getCurrentPairingFlowState().setMessage("Requesting to pair...");
@@ -1735,6 +1736,7 @@ public class Spi {
                 mostRecentPongReceived = null;
                 missedPongsCount = 0;
                 stopPeriodicPing();
+                spiMessageStamp.resetConnection();
 
                 if (getCurrentStatus() != SpiStatus.UNPAIRED) {
                     setCurrentStatus(SpiStatus.PAIRED_CONNECTING);
@@ -1927,11 +1929,11 @@ public class Spi {
      * Received a pong from the server.
      */
     private void handleIncomingPong(Message m) {
-        // We need to maintain this time delta otherwise the server will not accept our messages.
-        spiMessageStamp.setServerTimeDelta(m.getServerTimeDelta());
-
         if (mostRecentPongReceived == null) {
             // First pong received after a connection, and after the pairing process is fully finalised.
+            // Receive connection id from PinPad after first pong, store this as this needs to be passed for every request.
+//            spiMessageStamp.setConnectionId(m.);
+            spiMessageStamp.setConnId(m.getConnId());
             if (getCurrentStatus() != SpiStatus.UNPAIRED) {
                 LOG.info("First pong of connection and in paired state");
                 onReadyToTransact();
