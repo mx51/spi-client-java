@@ -27,7 +27,7 @@ public class SpiTest {
     public void testStartOnInvalidLengthForPosIdIsSet() throws Spi.CompatibilityException {
         // arrange
         final String posId = "12345678901234567";
-        final String eftposAddress = "10.20.30.40";
+        final String eftposAddress = "10.20.30.40:7899";
         final String posVendorId = "mx51";
         final String posVersion = "2.6.3";
         Spi spi = new Spi(posId, "", eftposAddress, null);

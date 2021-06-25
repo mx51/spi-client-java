@@ -33,6 +33,8 @@ public class ConnectionTest {
 
         conn.connect();
 
+//        conn.disconnect();
+
         are.waitOne(20);
 
         Assert.assertEquals(Connection.State.CONNECTING, connectionStateList.get(0));
