@@ -40,7 +40,7 @@ public class Spi {
     private static final int RETRIES_BEFORE_RESOLVING_DEVICE_ADDRESS = 3;
 
     private static final Pattern REGEX_ITEMS_FOR_POSID = Pattern.compile("[a-zA-Z0-9]*$");
-    private static final Pattern REGEX_ITEMS_FOR_EFTPOSADDRESS = Pattern.compile("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$");
+    private static final Pattern REGEX_ITEMS_FOR_EFTPOSADDRESS = Pattern.compile("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}(:[0-9]{1,4})?$");
 
     String posId;
     String eftposAddress;
