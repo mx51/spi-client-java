@@ -202,10 +202,13 @@ public class Message {
     }
 
     public String toJson(MessageStamp stamp) {
-        dateTimeStamp = new SimpleDateFormat(DATE_TIME_FORMAT, Locale.US).format(new Date());
-        posCounter = stamp.getPosCounter()+1;
+        stamp.setPosCounter(stamp.getPosCounter()+1);
+        posCounter = stamp.getPosCounter();
         connId = stamp.getConnId();
 
+        dateTimeStamp = new SimpleDateFormat(DATE_TIME_FORMAT, Locale.US).format(new Date());
+
+        System.out.println(dateTimeStamp);
         if (!needsEncryption) {
             // Unencrypted Messages need PosID inside the message
             posId = stamp.getPosId();
