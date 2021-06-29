@@ -1,4 +1,4 @@
-package com.mx51.spi;
+package io.mx51.spi;
 
 import io.mx51.spi.model.*;
 import io.mx51.spi.util.Events;
@@ -62,8 +62,11 @@ public class MessagesTest {
         data.put("param1", "value1");
         Message m = new Message("77", "event_y", data, false);
 
+        MessageStamp stamp = new MessageStamp("BAR1", null);
+        stamp.resetConnection(); // manually reset since no connection is established;
+
         // Serialize it to Json
-        String mJson = m.toJson(new MessageStamp("BAR1", null));
+        String mJson = m.toJson(stamp);
 
         // Let's assert Serialize Result by parsing it back.
         Message revertedM = Message.fromJson(mJson, null);
@@ -82,8 +85,11 @@ public class MessagesTest {
         // Here are our secrets
         Secrets secrets = new Secrets("11A1162B984FEF626ECC27C659A8B0EEAD5248CA867A6A87BEA72F8A8706109D", "40510175845988F13F6162ED8526F0B09F73384467FA855E1E79B44A56562A58");
 
+        MessageStamp stamp = new MessageStamp("BAR1", null);
+        stamp.resetConnection(); // manually reset since no connection is established;
+
+        stamp.setSecrets(secrets);
         // Serialize it to Json
-        MessageStamp stamp = new MessageStamp("BAR1", secrets);
         String mJson = m.toJson(stamp);
 
         // Let's assert Serialize Result by parsing it back.
