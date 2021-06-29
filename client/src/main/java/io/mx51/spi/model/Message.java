@@ -208,7 +208,6 @@ public class Message {
 
         dateTimeStamp = new SimpleDateFormat(DATE_TIME_FORMAT, Locale.US).format(new Date());
 
-        System.out.println(dateTimeStamp);
         if (!needsEncryption) {
             // Unencrypted Messages need PosID inside the message
             posId = stamp.getPosId();
