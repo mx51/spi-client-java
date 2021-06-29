@@ -17,8 +17,6 @@ public class MessageStamp {
     public MessageStamp(String posId, Secrets secrets) {
         this.posId = posId;
         this.secrets = secrets;
-
-        resetConnection();
     }
 
     public String getPosId() {
