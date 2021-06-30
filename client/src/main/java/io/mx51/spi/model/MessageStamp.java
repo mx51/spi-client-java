@@ -12,7 +12,7 @@ public class MessageStamp {
 
     private String connId;
 
-    private Integer posCounter;
+    private int posCounter;
 
     public MessageStamp(String posId, Secrets secrets) {
         this.posId = posId;

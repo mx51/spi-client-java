@@ -32,7 +32,7 @@ public class Message {
     @SerializedName("datetime")
     private String dateTimeStamp;
     @SerializedName("pos_counter")
-    private Integer posCounter;
+    private int posCounter;
     @SerializedName("conn_id")
     private String connId;
     @SerializedName("pos_id")
