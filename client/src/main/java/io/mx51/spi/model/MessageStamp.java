@@ -36,8 +36,8 @@ public class MessageStamp {
     }
 
     public void resetConnection() {
-        Integer min = 100;
-        Integer max = 99999;
+        int min = 100;
+        int max = 99999;
 
         setConnectionId("");
         this.posCounter = min + (int)(Math.random() * ((max - min) + 1));

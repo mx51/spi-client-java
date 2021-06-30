@@ -1931,8 +1931,6 @@ public class Spi {
     private void handleIncomingPong(Message m) {
         if (mostRecentPongReceived == null) {
             // First pong received after a connection, and after the pairing process is fully finalised.
-            // Receive connection id from PinPad after first pong, store this as this needs to be passed for every request.
-//            spiMessageStamp.setConnectionId(m.);
             spiMessageStamp.setConnId(m.getConnId());
             if (getCurrentStatus() != SpiStatus.UNPAIRED) {
                 LOG.info("First pong of connection and in paired state");
