@@ -56,11 +56,11 @@ public class MessageStamp {
         this.connId = connId;
     }
 
-    public Integer getPosCounter() {
+    public int getPosCounter() {
         return posCounter;
     }
 
-    public void setPosCounter(Integer posCounter) {
+    public void setPosCounter(int posCounter) {
         this.posCounter = posCounter;
     }
 }

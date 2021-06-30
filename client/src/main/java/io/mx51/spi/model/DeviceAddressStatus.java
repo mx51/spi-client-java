@@ -10,7 +10,7 @@ public class DeviceAddressStatus {
     private String address;
     @SerializedName("last_updated")
     private String lastUpdated;
-    private Integer responseCode;
+    private int responseCode;
     private String responseMessage;
     private DeviceAddressResponseCode deviceAddressResponseCode;
 
@@ -46,11 +46,11 @@ public class DeviceAddressStatus {
         this.responseMessage = responseMessage;
     }
 
-    public Integer getResponseCode() {
+    public int getResponseCode() {
         return responseCode;
     }
 
-    public void setResponseCode(Integer responseCode) {
+    public void setResponseCode(int responseCode) {
         this.responseCode = responseCode;
     }
 }
