@@ -1,5 +1,6 @@
-package io.mx51.spi;
+package com.mx51.spi;
 
+import io.mx51.spi.SpiClientTestUtils;
 import io.mx51.spi.model.*;
 import io.mx51.spi.util.*;
 import org.junit.Assert;

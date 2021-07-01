@@ -10,12 +10,13 @@ public class MessageStamp {
 
     private Secrets secrets;
 
-    private long serverTimeDelta;
+    private String connId;
 
-    public MessageStamp(String posId, Secrets secrets, long serverTimeDelta) {
+    private int posCounter;
+
+    public MessageStamp(String posId, Secrets secrets) {
         this.posId = posId;
         this.secrets = secrets;
-        this.serverTimeDelta = serverTimeDelta;
     }
 
     public String getPosId() {
@@ -34,12 +35,32 @@ public class MessageStamp {
         this.secrets = secrets;
     }
 
-    public long getServerTimeDelta() {
-        return serverTimeDelta;
+    public void resetConnection() {
+        int min = 100;
+        int max = 99999;
+
+        setConnectionId("");
+        this.posCounter = min + (int)(Math.random() * ((max - min) + 1));
     }
 
-    public void setServerTimeDelta(long serverTimeDelta) {
-        this.serverTimeDelta = serverTimeDelta;
+    public void setConnectionId(String connId) {
+        if (connId != null)
+            this.connId = connId;
     }
 
+    public String getConnId() {
+        return connId;
+    }
+
+    public void setConnId(String connId) {
+        this.connId = connId;
+    }
+
+    public int getPosCounter() {
+        return posCounter;
+    }
+
+    public void setPosCounter(int posCounter) {
+        this.posCounter = posCounter;
+    }
 }
