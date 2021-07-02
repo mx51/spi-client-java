@@ -10,7 +10,7 @@ import java.util.Scanner;
 public class Pos {
 
     private String posId = "ACMEPOS";
-    private String eftposAddress = "emulator-prod.herokuapp.com";
+    private String eftposAddress = "127.0.0.1:8090";
     private Secrets spiSecrets;
 
     private Spi spi;
@@ -184,6 +184,17 @@ public class Pos {
                             }
                         }
                         break;
+                    case REVERSAL:
+                        if (txFlowState.getResponse() != null) {
+                            ReversalResponse revResponse = new ReversalResponse(txFlowState.getResponse());
+                            if(revResponse.getSuccess()==true) {
+                                System.out.println("# Reverse transaction with posRefId" + revResponse.getPosRefId() + "is successful");
+                            } else {
+                                System.out.println(revResponse.getErrorReason());
+                                System.out.println(revResponse.getErrorDetail());
+                            }
+                        }
+                        break;
                     default:
                         break;
                 }
@@ -271,6 +282,7 @@ public class Pos {
                 System.out.println("# [purchase:1981] - initiate a payment of $19.81");
                 System.out.println("# [refund:1891] - initiate a refund of $18.91");
                 System.out.println("# [settle] - Initiate Settlement");
+                System.out.println("# [reverse:posRefId] - initiate a transaction reverse with given posRefId");
                 System.out.println("# [unpair] - unpair and disconnect");
                 break;
             case TRANSACTION: // Paired, Transaction
@@ -333,6 +345,11 @@ public class Pos {
                 System.out.println(sres.isInitiated() ?
                         "# Settle initiated. Will be updated with progress." :
                         "# Could not initiate settle: " + sres.getMessage() + ". Please retry.");
+            } else if ("reverse".equals(command)) {
+                final InitiateTxResult revres = spi.initiateReversal(spInput[1]);
+                System.out.println(revres.isInitiated() ?
+                        "# Reversal initiated. Will be updated with progress." :
+                        "# Could not initiate reversal: " + revres.getMessage() + ". Please retry.");
             } else if ("glt".equals(command)) {
                 final InitiateTxResult gltres = spi.initiateGetLastTx();
                 System.out.println(gltres.isInitiated() ?

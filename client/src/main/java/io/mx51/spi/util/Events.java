@@ -24,6 +24,8 @@ public final class Events {
     public static final String CANCEL_TRANSACTION_RESPONSE = "cancel_response";
     public static final String GET_LAST_TRANSACTION_REQUEST = "get_last_transaction";
     public static final String GET_LAST_TRANSACTION_RESPONSE = "last_transaction";
+    public static final String REVERSAL_REQUEST = "reverse_transaction";
+    public static final String REVERSAL_RESPONSE = "reverse_transaction_response";
     public static final String REFUND_REQUEST = "refund";
     public static final String REFUND_RESPONSE = "refund_response";
     public static final String SIGNATURE_REQUIRED = "signature_required";

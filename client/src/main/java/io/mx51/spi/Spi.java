@@ -499,6 +499,11 @@ public class Spi {
         send(new PrintingRequest(key, payload).toMessage());
     }
 
+    public void sendTransactionReport() {
+        // TODO: Dummy method. Delete when analytics is implemented
+        return;
+    }
+
     public void getTerminalStatus() {
         send(new TerminalStatusRequest().toMessage());
     }
@@ -1126,6 +1131,33 @@ public class Spi {
     }
 
     /**
+     * Initiates transaction reversal operation.
+     */
+
+    @NotNull
+    public InitiateTxResult initiateReversal(String posRefId) {
+        if (getCurrentStatus() == SpiStatus.UNPAIRED) return new InitiateTxResult(false, "Not Paired");
+
+        synchronized (txLock) {
+            if (currentFlow != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
+            currentFlow = SpiFlow.TRANSACTION;
+
+            setCurrentFlow(SpiFlow.TRANSACTION);
+
+            final Message reversalRequestMsg  = new ReversalRequest(posRefId).ToMessage();
+            
+            setCurrentTxFlowState(new TransactionFlowState(
+                    posRefId, TransactionType.REVERSAL, 0, reversalRequestMsg,
+                    "Waiting for EFTPOS to make a reversal request"));
+
+            if (send(reversalRequestMsg)) {
+                getCurrentTxFlowState().sent("Asked EFTPOS reversal");
+            }
+        }
+        return new InitiateTxResult(true, "Reversal Initiated");
+    }
+
+    /**
      * This is useful to recover from your POS crashing in the middle of a transaction.
      * When you restart your POS, if you had saved enough state, you can call this method to recover the client library state.
      * You need to have the posRefId that you passed in with the original transaction, and the transaction type.
@@ -1421,6 +1453,25 @@ public class Spi {
      */
     private void handleSettlementEnquiryResponse(Message m) {
         handleTxResponse(m, TransactionType.SETTLEMENT_ENQUIRY, false);
+    }
+
+    /**
+     * Handle the Reversal Response received from the PinPad
+     */
+    private void handleReversalTransaction(Message m) {
+
+        synchronized (txLock) {
+            String incomingPosRefId = m.getDataStringValue("pos_ref_id");
+
+            if (getCurrentFlow() != SpiFlow.TRANSACTION || getCurrentTxFlowState().isFinished() || getCurrentTxFlowState().getPosRefId().equals(incomingPosRefId)) {
+                LOG.info("Received Reversal response but I was not waiting for this one. Incoming Pos Ref ID: " + incomingPosRefId);
+                return;
+            }
+
+            getCurrentTxFlowState().completed(m.getSuccessState(), m, "Reversal Transaction Ended.");
+        }
+        txFlowStateChanged();
+        sendTransactionReport();
     }
 
     private void handleTxResponse(@NotNull Message m, @NotNull TransactionType type, boolean checkPosRefId) {
@@ -1745,6 +1796,13 @@ public class Spi {
                             // TH-1D
                             LOG.warn("Lost connection in the middle of a transaction...");
                         }
+
+                        // As we have no way to recover from a reversal in the event of a disconnection, we will fail the reversal.
+                        if (getCurrentTxFlowState().getType() == TransactionType.REVERSAL)
+                        {
+                            getCurrentTxFlowState().completed(Message.SuccessState.FAILED, null, "We were in the middle of a reversal when a disconnection happened, let's fail the reversal.");
+                            txFlowStateChanged();
+                        }
                     }
 
                     if (conn == null) return; // This means the instance has been disposed. Aborting.
@@ -2004,6 +2062,8 @@ public class Spi {
             handleSettlementEnquiryResponse(m);
         } else if (Events.SETTLE_RESPONSE.equals(eventName)) {
             handleSettleResponse(m);
+        } else if (Events.REVERSAL_RESPONSE.equals(eventName)) {
+            handleReversalTransaction(m);
         } else if (Events.PING.equals(eventName)) {
             handleIncomingPing(m);
         } else if (Events.PONG.equals(eventName)) {
