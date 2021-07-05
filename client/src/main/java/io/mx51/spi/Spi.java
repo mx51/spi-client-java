@@ -1140,12 +1140,10 @@ public class Spi {
 
         synchronized (txLock) {
             if (currentFlow != SpiFlow.IDLE) return new InitiateTxResult(false, "Not Idle");
-            currentFlow = SpiFlow.TRANSACTION;
-
-            setCurrentFlow(SpiFlow.TRANSACTION);
 
             final Message reversalRequestMsg  = new ReversalRequest(posRefId).ToMessage();
-            
+
+            setCurrentFlow(SpiFlow.TRANSACTION);
             setCurrentTxFlowState(new TransactionFlowState(
                     posRefId, TransactionType.REVERSAL, 0, reversalRequestMsg,
                     "Waiting for EFTPOS to make a reversal request"));
@@ -1154,6 +1152,7 @@ public class Spi {
                 getCurrentTxFlowState().sent("Asked EFTPOS reversal");
             }
         }
+        txFlowStateChanged();
         return new InitiateTxResult(true, "Reversal Initiated");
     }
 
@@ -1458,20 +1457,9 @@ public class Spi {
     /**
      * Handle the Reversal Response received from the PinPad
      */
-    private void handleReversalTransaction(Message m) {
-
-        synchronized (txLock) {
-            String incomingPosRefId = m.getDataStringValue("pos_ref_id");
-
-            if (getCurrentFlow() != SpiFlow.TRANSACTION || getCurrentTxFlowState().isFinished() || getCurrentTxFlowState().getPosRefId().equals(incomingPosRefId)) {
-                LOG.info("Received Reversal response but I was not waiting for this one. Incoming Pos Ref ID: " + incomingPosRefId);
-                return;
-            }
-
-            getCurrentTxFlowState().completed(m.getSuccessState(), m, "Reversal Transaction Ended.");
-        }
-        txFlowStateChanged();
-        sendTransactionReport();
+    private void handleReversalResponse(Message m) {
+        handleTxResponse(m, TransactionType.REVERSAL, true);
+//        sendTransactionReport();
     }
 
     private void handleTxResponse(@NotNull Message m, @NotNull TransactionType type, boolean checkPosRefId) {
@@ -2046,6 +2034,8 @@ public class Spi {
             handleDropKeysAdvice(m);
         } else if (Events.PURCHASE_RESPONSE.equals(eventName)) {
             handlePurchaseResponse(m);
+        } else if (Events.REVERSAL_RESPONSE.equals(eventName)) {
+            handleReversalResponse(m);
         } else if (Events.REFUND_RESPONSE.equals(eventName)) {
             handleRefundResponse(m);
         } else if (Events.CASHOUT_ONLY_RESPONSE.equals(eventName)) {
@@ -2062,9 +2052,7 @@ public class Spi {
             handleSettlementEnquiryResponse(m);
         } else if (Events.SETTLE_RESPONSE.equals(eventName)) {
             handleSettleResponse(m);
-        } else if (Events.REVERSAL_RESPONSE.equals(eventName)) {
-            handleReversalTransaction(m);
-        } else if (Events.PING.equals(eventName)) {
+        }  else if (Events.PING.equals(eventName)) {
             handleIncomingPing(m);
         } else if (Events.PONG.equals(eventName)) {
             handleIncomingPong(m);

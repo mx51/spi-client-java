@@ -188,7 +188,7 @@ public class Pos {
                         if (txFlowState.getResponse() != null) {
                             ReversalResponse revResponse = new ReversalResponse(txFlowState.getResponse());
                             if(revResponse.getSuccess()==true) {
-                                System.out.println("# Reverse transaction with posRefId" + revResponse.getPosRefId() + "is successful");
+                                System.out.println("# Reversal for transaction with posRefId " + revResponse.getPosRefId() + " is successful");
                             } else {
                                 System.out.println(revResponse.getErrorReason());
                                 System.out.println(revResponse.getErrorDetail());
