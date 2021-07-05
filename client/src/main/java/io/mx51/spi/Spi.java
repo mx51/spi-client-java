@@ -28,7 +28,7 @@ public class Spi {
 
     private static final Logger LOG = LoggerFactory.getLogger("spi");
 
-    static final String PROTOCOL_VERSION = "2.6.0";
+    static final String PROTOCOL_VERSION = "2.8.0";
 
     private static final long RECONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(3);
     private static final long TX_MONITOR_CHECK_FREQUENCY = TimeUnit.SECONDS.toMillis(1);
@@ -131,7 +131,7 @@ public class Spi {
         currentFlow = SpiFlow.IDLE;
 
         // Our stamp for signing outgoing messages
-        spiMessageStamp = new MessageStamp(this.posId, this.secrets, 0);
+        spiMessageStamp = new MessageStamp(this.posId, this.secrets);
 
         // We will maintain some state
         mostRecentPingSent = null;
@@ -1763,6 +1763,7 @@ public class Spi {
 
             case CONNECTED:
                 retriesSinceLastDeviceAddressResolution = 0;
+                spiMessageStamp.resetConnection();
 
                 if (getCurrentFlow() == SpiFlow.PAIRING && getCurrentStatus() == SpiStatus.UNPAIRED) {
                     getCurrentPairingFlowState().setMessage("Requesting to pair...");
@@ -1786,6 +1787,7 @@ public class Spi {
                 mostRecentPongReceived = null;
                 missedPongsCount = 0;
                 stopPeriodicPing();
+                spiMessageStamp.resetConnection();
 
                 if (getCurrentStatus() != SpiStatus.UNPAIRED) {
                     setCurrentStatus(SpiStatus.PAIRED_CONNECTING);
@@ -1985,11 +1987,9 @@ public class Spi {
      * Received a pong from the server.
      */
     private void handleIncomingPong(Message m) {
-        // We need to maintain this time delta otherwise the server will not accept our messages.
-        spiMessageStamp.setServerTimeDelta(m.getServerTimeDelta());
-
         if (mostRecentPongReceived == null) {
             // First pong received after a connection, and after the pairing process is fully finalised.
+            spiMessageStamp.setConnId(m.getConnId());
             if (getCurrentStatus() != SpiStatus.UNPAIRED) {
                 LOG.info("First pong of connection and in paired state");
                 onReadyToTransact();

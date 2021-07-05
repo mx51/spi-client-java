@@ -318,7 +318,7 @@ public class Pos {
                 SystemHelper.clearConsole();
                 printStatusAndActions();
             } else if ("eftpos_address".equals(command)) {
-                eftposAddress = spInput[1];
+                eftposAddress = spInput.length==3 ? spInput[1]+":"+spInput[2] : spInput[1];
                 spi.setEftposAddress(eftposAddress);
                 SystemHelper.clearConsole();
                 printStatusAndActions();
