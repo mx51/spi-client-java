@@ -72,6 +72,7 @@ public class Spi {
     private TerminalStatusResponseDelegate terminalStatusResponseDelegate;
     private BatteryLevelChangedDelegate batteryLevelChangedDelegate;
     private TerminalConfigurationResponseDelegate terminalConfigurationResponseDelegate;
+    private TransactionUpdateMessageDelegate transactionUpdateMessageDelegate;
 
     private Message mostRecentPingSent;
     private long mostRecentPingSentTime;
@@ -455,6 +456,10 @@ public class Spi {
 
     public void setBatteryLevelChangedDelegate(BatteryLevelChangedDelegate batteryLevelChangedDelegate) {
         this.batteryLevelChangedDelegate = batteryLevelChangedDelegate;
+    }
+
+    public void setTransactionUpdateMessageDelegate(TransactionUpdateMessageDelegate transactionUpdateMessageDelegate) {
+        this.transactionUpdateMessageDelegate = transactionUpdateMessageDelegate;
     }
 
     public void setTerminalConfigurationResponseDelegate(TerminalConfigurationResponseDelegate terminalConfigurationResponseDelegate) {
@@ -1712,6 +1717,12 @@ public class Spi {
         }
     }
 
+    private void handleTransactionUpdateMessage(@NotNull Message m) {
+        if (transactionUpdateMessageDelegate != null) {
+            transactionUpdateMessageDelegate.transactionUpdateMessage(m);
+        }
+    }
+
     //endregion
 
     //region Internals for connection management
@@ -2095,6 +2106,8 @@ public class Spi {
             handleTerminalStatusResponse(m);
         } else if (Events.BATTERY_LEVEL_CHANGED.equals(eventName)) {
             handleBatteryLevelChanged(m);
+        } else if (Events.TRANSACTION_UPDATE_MESSAGE.equals(eventName)) {
+            handleTransactionUpdateMessage(m);
         } else if (Events.TERMINAL_CONFIGURATION_RESPONSE.equals(eventName)) {
             handleTerminalConfigurationResponse(m);
         } else if (Events.ERROR.equals(eventName)) {
@@ -2303,6 +2316,10 @@ public class Spi {
 
     public interface BatteryLevelChangedDelegate {
         void batteryLevelChanged(@NotNull Message message);
+    }
+
+    public interface TransactionUpdateMessageDelegate {
+        void transactionUpdateMessage(@NotNull Message message);
     }
 
     public interface TerminalConfigurationResponseDelegate {
