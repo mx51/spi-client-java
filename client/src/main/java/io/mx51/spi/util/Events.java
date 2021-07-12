@@ -55,6 +55,8 @@ public final class Events {
 
     public static final String INVALID_HMAC_SIGNATURE = "_INVALID_SIGNATURE_";
 
+    public static final String TRANSACTION_UPDATE_MESSAGE = "txn_update_message";
+
     //region Pay At Table
 
     public static final String PAY_AT_TABLE_GET_TABLE_CONFIG = "get_table_config"; // Incoming. When EFTPOS wants to ask us for P@T configuration.
