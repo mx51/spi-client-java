@@ -1,5 +1,7 @@
 package io.mx51.spi.model;
 
+import java.util.Date;
+
 /**
  * Represents the State during a TransactionFlow.
  */
@@ -25,6 +27,15 @@ public class TransactionFlowState {
     private Message request;
     private boolean awaitingGltResponse;
     private String gltResponsePosRefId;
+    private long completedTime;
+
+    public long getCompletedTime() {
+        return completedTime;
+    }
+
+    public void setCompletedTime(long completedTime) {
+        this.completedTime = completedTime;
+    }
 
     public TransactionFlowState(String posRefId, TransactionType type, int amountCents, Message message, String msg) {
         this.posRefId = posRefId;
@@ -71,12 +82,14 @@ public class TransactionFlowState {
         this.finished = true;
         this.response = response;
         this.displayMessage = msg;
+        this.completedTime = System.currentTimeMillis();
     }
 
     public void signatureRequired(SignatureRequired spiMessage, String msg) {
         this.signatureRequiredMessage = spiMessage;
         this.awaitingSignatureCheck = true;
         this.displayMessage = msg;
+        this.completedTime = System.currentTimeMillis();
     }
 
     public void signatureResponded(String msg) {
@@ -113,6 +126,7 @@ public class TransactionFlowState {
         this.awaitingGltResponse = false;
         this.awaitingSignatureCheck = false;
         this.displayMessage = msg;
+        this.completedTime = System.currentTimeMillis();
     }
 
     /**
