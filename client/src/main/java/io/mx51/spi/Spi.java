@@ -1320,12 +1320,12 @@ public class Spi {
         currentState.setAwaitingCheckFromEftpos(false);
         if (pairResp.isSuccess()) {
             if (currentState.isAwaitingCheckFromPos()) {
-                // Still Waiting for User to say yes on POS
-                currentState.setMessage("Confirm that the following Code is what the EFTPOS showed");
-                pairingFlowStateChanged();
-            } else {
-                onPairingSuccess();
+                LOG.info("Confirming pairing from library.");
+                pairingConfirmCode();
             }
+
+            LOG.info("Got Pair Confirm from Eftpos, and already had confirm from POS. Now just waiting for first pong.");
+            onPairingSuccess();
 
             // I need to ping/login even if the pos user has not said yes yet,
             // because otherwise within 5 seconds connecting will be dropped by EFTPOS.
