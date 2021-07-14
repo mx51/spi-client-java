@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'java-library-distribution'
+    id("maven-publish")
 }
 
 archivesBaseName = property('project.name')
@@ -22,6 +23,24 @@ ext {
 
     configPackage = "io.mx51.spi"
     configFields = [VERSION: "$version"]
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/mx51/spi-client-java")
+            credentials {
+                username = "AliAkiltayev"
+                password = "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"
+            }
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
+        }
+    }
 }
 
 dependencies {
