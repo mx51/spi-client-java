@@ -22,7 +22,6 @@ public class BillPaymentFlowEndedAckRequest
         public BillPaymentFlowEndedAckRequest(String billId)
         {
             this.billId = billId;
-//            this.id = Id;
         }
 
         public Message ToMessage()
