@@ -67,6 +67,7 @@ public final class Events {
     public static final String PAY_AT_TABLE_GET_OPEN_TABLES = "get_open_tables";
     public static final String PAY_AT_TABLE_OPEN_TABLES = "open_tables";
     public static final String PAY_AT_TABLE_BILL_PAYMENT_FLOW_ENDED = "bill_payment_flow_ended";
+    public static final String PAY_AT_TABLE_BILL_PAYMENT_FLOW_ENDED_ACK = "bill_payment_flow_ended_ack";
 
     //endregion
 
