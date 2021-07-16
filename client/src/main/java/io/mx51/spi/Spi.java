@@ -520,10 +520,9 @@ public class Spi {
         send(new TerminalConfigurationRequest().toMessage());
     }
 
-    /// <summary>
-    /// Async call to get the current terminal address, this does not update the internals address of the library.
-    /// </summary>
-    /// <returns></returns>
+    /**
+     * Async call to get the current terminal address, this does not update the internals address of the library.
+     */
     public String getTerminalAddress() {
         DeviceService service = new DeviceService();
         DeviceAddressStatus deviceAddressStatus = service.retrieveDeviceAddress(serialNumber, deviceApiKey, acquirerCode, inTestMode);
