@@ -509,12 +509,25 @@ public class Spi {
         return;
     }
 
+
+    // region Device Management Methods
+
     public void getTerminalStatus() {
         send(new TerminalStatusRequest().toMessage());
     }
 
     public void getTerminalConfiguration() {
         send(new TerminalConfigurationRequest().toMessage());
+    }
+
+    /**
+     * Async call to get the current terminal address, this does not update the internals address of the library.
+     */
+    public String getTerminalAddress() {
+        DeviceService service = new DeviceService();
+        DeviceAddressStatus deviceAddressStatus = service.retrieveDeviceAddress(serialNumber, deviceApiKey, acquirerCode, inTestMode);
+
+        return deviceAddressStatus.getAddress();
     }
 
     //endregion
@@ -2180,10 +2193,6 @@ public class Spi {
         return !serialNumber.equals(updatedSerialNumber);
     }
 
-    private boolean hasEftposAddressChanged(String updatedEftposAddress) {
-        return !eftposAddress.equals(updatedEftposAddress);
-    }
-
     private void autoResolveEftposAddress() {
         if (!autoAddressResolutionEnabled) return;
 
@@ -2196,42 +2205,24 @@ public class Spi {
             @Override
             public void run() {
                 DeviceService deviceService = new DeviceService();
-                DeviceAddressStatus addressResponse = deviceService.retrieveService(serialNumber, deviceApiKey, acquirerCode, inTestMode);
+                DeviceAddressStatus deviceAddressStatus = deviceService.retrieveDeviceAddress(serialNumber, deviceApiKey, acquirerCode, inTestMode);
+                currentDeviceStatus = deviceAddressStatus;
 
-                if (addressResponse == null || (addressResponse.getAddress() == null && (addressResponse.getResponseCode() != 200 && addressResponse.getResponseCode() != 404))) {
-                    DeviceAddressStatus state = new DeviceAddressStatus();
-                    state.setDeviceAddressResponseCode(DeviceAddressResponseCode.DEVICE_SERVICE_ERROR);
-                    setCurrentDeviceStatus(state);
+                if (deviceAddressStatus.getDeviceAddressResponseCode() != DeviceAddressResponseCode.SUCCESS) {
+                    LOG.warn("Trying to auto resolve address, but device address has not changed.");
 
-                    deviceStatusChanged(getCurrentDeviceStatus());
-                    return;
-                }
-
-                if (addressResponse.getResponseCode() == 404) {
-                    DeviceAddressStatus state = new DeviceAddressStatus();
-                    state.setDeviceAddressResponseCode(DeviceAddressResponseCode.INVALID_SERIAL_NUMBER);
-                    setCurrentDeviceStatus(state);
-
-                    deviceStatusChanged(getCurrentDeviceStatus());
-                    return;
-                }
-
-                if (!hasEftposAddressChanged(addressResponse.getAddress())) {
-                    getCurrentDeviceStatus().setDeviceAddressResponseCode(DeviceAddressResponseCode.ADDRESS_NOT_CHANGED);
-                    deviceStatusChanged(getCurrentDeviceStatus());
+                    // even though address haven't changed - dispatch event as PoS depend on this
+                    deviceStatusChanged(currentDeviceStatus);
                     return;
                 }
 
                 // update device and connection address
-                eftposAddress = "ws://" + addressResponse.getAddress();
+                eftposAddress = "ws://" + deviceAddressStatus.getAddress();
                 conn.setAddress(eftposAddress);
 
-                DeviceAddressStatus state = new DeviceAddressStatus();
-                state.setAddress(addressResponse.getAddress());
-                state.setLastUpdated(addressResponse.getLastUpdated());
-                state.setDeviceAddressResponseCode(DeviceAddressResponseCode.SUCCESS);
-                setCurrentDeviceStatus(state);
+                LOG.warn("New address for device "+ deviceAddressStatus.getAddress());
 
+                // dispatch event
                 deviceStatusChanged(getCurrentDeviceStatus());
             }
         }).start();
