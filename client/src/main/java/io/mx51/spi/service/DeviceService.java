@@ -21,7 +21,8 @@ public class DeviceService {
                 .build();
     }
 
-    public DeviceAddressStatus retrieveService(String serialNumber, String apiKey, String acquirerCode, boolean isTestMode) {
+  
+    public DeviceAddressStatus retrieveDeviceAddress(String serialNumber, String apiKey, String acquirerCode, boolean isTestMode) {
         String deviceAddressUrl;
 
         DeviceAddressStatus deviceAddressStatus = new DeviceAddressStatus();

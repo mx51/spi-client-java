@@ -35,6 +35,14 @@ public class SpiPayAtTable {
         spi.send(config.toMessage(RequestIdHelper.id("patconf")));
     }
 
+    public void billPaymentReceivedAck(String billId)
+    {
+        if (spi.currentStatus == SpiStatus.PAIRED_CONNECTED)
+        {
+            spi.send(new BillPaymentFlowEndedAckRequest(billId).ToMessage());
+        }
+    }
+
     public void setGetBillStatusDelegate(GetBillStatusDelegate getBillStatusDelegate) {
         this.getBillStatusDelegate = getBillStatusDelegate;
     }
@@ -151,6 +159,14 @@ public class SpiPayAtTable {
         assert billPaymentFlowEndedDelegate != null;
 
         billPaymentFlowEndedDelegate.getBillPaymentFlowEnded(m);
+
+        // bill payment flow has ended, we need to respond with an ack
+        if (spi.currentStatus == SpiStatus.PAIRED_CONNECTED)
+        {
+            BillPaymentFlowEndedResponse billPaymentFlowEndedResponse = new BillPaymentFlowEndedResponse(m);
+
+            spi.send(new BillPaymentFlowEndedAckRequest(billPaymentFlowEndedResponse.getBillId()).ToMessage());
+        }
     }
 
     public interface GetBillStatusDelegate {
