@@ -22,16 +22,11 @@ public class DeviceService {
     }
 
     public DeviceAddressStatus retrieveService(String serialNumber, String apiKey, String acquirerCode, boolean isTestMode) {
-        String envSuffix = "";
         String deviceAddressUrl;
 
         DeviceAddressStatus deviceAddressStatus = new DeviceAddressStatus();
 
-        if (isTestMode) {
-            envSuffix = "-sb";
-        }
-
-        deviceAddressUrl = String.format("https://device-address-api%s.%s.mspenv.io/v1/%s/ip", envSuffix, acquirerCode, serialNumber);
+        deviceAddressUrl = String.format("https://device-address-api%s.%s.mspenv.io/v1/%s/ip", isTestMode ? "-sb" : "", acquirerCode, serialNumber);
 
         try {
             Request request = new Request.Builder()

@@ -5,13 +5,14 @@ import io.mx51.spi.service.AnalyticsService;
 import io.mx51.spi.service.DeviceService;
 import io.mx51.spi.service.TenantService;
 import io.mx51.spi.util.*;
+import okhttp3.Response;
 import org.apache.commons.lang.StringUtils;
-import org.asynchttpclient.Response;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -2264,15 +2265,19 @@ public class Spi {
                 AnalyticsService service = new AnalyticsService();
 
                 try {
-                    Future<Response> responseFuture = service.reportTransaction(transactionReport, deviceApiKey, acquirerCode, inTestMode);
+                    Response response= service.reportTransaction(transactionReport, deviceApiKey, acquirerCode, inTestMode);
 
-                    if (responseFuture.get()==null) {
+                    if (response.isSuccessful()) {
+                        LOG.info("Transaction Report successfully sent");
+                    } else {
                         LOG.warn("Error reporting to anaytics service.");
                         return;
                     }
                 } catch (ExecutionException e) {
                     e.printStackTrace();
                 } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
