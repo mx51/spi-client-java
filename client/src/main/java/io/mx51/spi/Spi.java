@@ -1,22 +1,24 @@
 package io.mx51.spi;
 
 import io.mx51.spi.model.*;
+import io.mx51.spi.service.AnalyticsService;
 import io.mx51.spi.service.DeviceService;
 import io.mx51.spi.service.TenantService;
 import io.mx51.spi.util.*;
+import okhttp3.Response;
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.TimeZone;
+import java.util.concurrent.*;
 import java.util.regex.Pattern;
 
 /**
@@ -54,6 +56,7 @@ public class Spi {
     private String posVendorId;
     private String posVersion;
     private boolean hasSetInfo;
+    private final String libraryLanguage = "java";
 
     Connection conn;
 
@@ -73,6 +76,7 @@ public class Spi {
     private BatteryLevelChangedDelegate batteryLevelChangedDelegate;
     private TerminalConfigurationResponseDelegate terminalConfigurationResponseDelegate;
     private TransactionUpdateMessageDelegate transactionUpdateMessageDelegate;
+    private TransactionReport transactionReport;
 
     private Message mostRecentPingSent;
     private long mostRecentPingSentTime;
@@ -504,14 +508,9 @@ public class Spi {
         send(new PrintingRequest(key, payload).toMessage());
     }
 
-    public void sendTransactionReport() {
-        // TODO: Dummy method. Delete when analytics is implemented
-        return;
-    }
-
 
     // region Device Management Methods
-
+  
     public void getTerminalStatus() {
         send(new TerminalStatusRequest().toMessage());
     }
@@ -904,6 +903,7 @@ public class Spi {
             }
         }
         txFlowStateChanged();
+        sendTransactionReport();
         return new MidTxResult(true, "");
     }
 
@@ -1488,6 +1488,7 @@ public class Spi {
             // TH-6A, TH-6E
         }
         txFlowStateChanged();
+        sendTransactionReport();
     }
 
     /**
@@ -1624,6 +1625,7 @@ public class Spi {
             }
         }
         txFlowStateChanged();
+        sendTransactionReport();
     }
 
     private void startTransactionMonitoring() {
@@ -1687,6 +1689,7 @@ public class Spi {
             txState.cancelFailed("Failed to cancel transaction: " + response.getErrorDetail() + ". Check EFTPOS.");
 
             txFlowStateChanged();
+            sendTransactionReport();
         }
     }
 
@@ -1971,6 +1974,7 @@ public class Spi {
             } else {
                 if (!hasSetInfo) {
                     callSetPosInfo();
+                    transactionReport = TransactionReportHelper.createTransactionReportEnvelope(posVendorId, posVersion, libraryLanguage, getVersion(), serialNumber);
                 }
                 final SpiPayAtTable spiPat = this.spiPat;
                 if (spiPat != null) {
@@ -1981,7 +1985,7 @@ public class Spi {
     }
 
     private void callSetPosInfo() {
-        final SetPosInfoRequest setPosInfoRequest = new SetPosInfoRequest(posVersion, posVendorId, "java", getVersion(), DeviceInfo.getAppDeviceInfo());
+        final SetPosInfoRequest setPosInfoRequest = new SetPosInfoRequest(posVersion, posVendorId, libraryLanguage, getVersion(), DeviceInfo.getAppDeviceInfo());
         send(setPosInfoRequest.toMessage());
     }
 
@@ -2228,6 +2232,48 @@ public class Spi {
         }).start();
     }
 
+    //endregion
+
+    //region Analytics
+    private void sendTransactionReport() {
+
+        transactionReport.setTxType(currentTxFlowState.getType().toString());
+        transactionReport.setTxResult(currentTxFlowState.getSuccess().toString());
+        transactionReport.setTxStartTime(currentTxFlowState.getRequestTime());
+        transactionReport.setTxEndTime(currentTxFlowState.getRequestTime());
+        transactionReport.setDurationMs((int)(currentTxFlowState.getCompletedTime() - currentTxFlowState.getRequestTime()));
+        transactionReport.setCurrentFlow(currentFlow.toString());
+        transactionReport.setCurrentTxFlowState(currentTxFlowState.getType().toString());
+        transactionReport.setCurrentStatus(currentStatus.toString());
+        transactionReport.setPosRefId(currentTxFlowState.getPosRefId());
+        transactionReport.setEvent("Waiting for Signature: "+ currentTxFlowState.isAwaitingSignatureCheck() + ", " +
+            "Attempting to Cancel: " + currentTxFlowState.isAttemptingToCancel() + ", Finished: " + currentTxFlowState.isFinished());
+        transactionReport.setSerialNumber(serialNumber);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                AnalyticsService service = new AnalyticsService();
+
+                try {
+                    Response response= service.reportTransaction(transactionReport, deviceApiKey, acquirerCode, inTestMode);
+
+                    if (response.isSuccessful()) {
+                        LOG.info("Transaction Report successfully sent");
+                    } else {
+                        LOG.warn("Error reporting to anaytics service.");
+                        return;
+                    }
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
     //endregion
 
     //region Static Methods
